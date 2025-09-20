@@ -23,6 +23,7 @@ import OrderFinancialDetail from './pages/Finance/OrderFinancialDetail';
 import Notifications from './pages/Notifications/Notifications';
 import Profile from './pages/Profile/Profile';
 import Kanban from './pages/Kanban/Kanban';
+import MobileKanbanTest from './pages/Test/MobileKanbanTest';
 import Employees from './pages/Employees/Employees';
 import SimpleWork from './pages/SimpleWork/SimpleWork';
 import PayrollReports from './pages/PayrollReports/PayrollReports';
@@ -70,6 +71,7 @@ function App() {
         <Route path="/orders/:id" element={<OrderDetailNew />} />
         <Route path="/orders/:id/work-order" element={<OrderWorkOrder />} />
         <Route path="/kanban" element={<Kanban />} />
+        <Route path="/mobile-kanban-test" element={<MobileKanbanTest />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/customers/:id" element={<CustomerDetail />} />
             <Route path="/materials" element={<Materials />} />
