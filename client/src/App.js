@@ -23,7 +23,7 @@ import OrderFinancialDetail from './pages/Finance/OrderFinancialDetail';
 import Notifications from './pages/Notifications/Notifications';
 import Profile from './pages/Profile/Profile';
 import Kanban from './pages/Kanban/Kanban';
-import MobileKanbanTest from './pages/Test/MobileKanbanTest';
+import MobileKanbanTest from './components/MobileKanban/MobileKanbanTest';
 import Employees from './pages/Employees/Employees';
 import SimpleWork from './pages/SimpleWork/SimpleWork';
 import PayrollReports from './pages/PayrollReports/PayrollReports';
