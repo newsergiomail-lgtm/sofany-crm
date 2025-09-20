@@ -1,5 +1,17 @@
-# Используем Node.js 18
-FROM node:18-alpine
+# Используем Node.js 18 с Ubuntu (вместо Alpine)
+FROM node:18-slim
+
+# Устанавливаем системные зависимости
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libjpeg-dev \
+    libgif-dev \
+    librsvg2-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
