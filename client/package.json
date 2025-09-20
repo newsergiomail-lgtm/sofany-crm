@@ -32,7 +32,7 @@
     "start": "react-scripts start",
     "start-servers": "node start-servers.js",
     "quick-install": "node quick-install.js",
-    "build": "react-scripts build",
+    "build": "CI=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "dev": "react-scripts start",
