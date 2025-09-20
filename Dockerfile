@@ -1,4 +1,4 @@
-# Используем Node.js 18 с Ubuntu (вместо Alpine)
+# Используем Node.js 18 с Ubuntu
 FROM node:18-slim
 
 # Устанавливаем системные зависимости
@@ -16,13 +16,11 @@ RUN apt-get update && apt-get install -y \
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем package.json файлы
-COPY package*.json ./
+# Копируем только package.json файлы для клиента и сервера
 COPY client/package*.json ./client/
 COPY server/package*.json ./server/
 
-# Устанавливаем зависимости
-RUN npm install
+# Устанавливаем зависимости только для клиента и сервера
 RUN cd client && npm install
 RUN cd server && npm install
 
