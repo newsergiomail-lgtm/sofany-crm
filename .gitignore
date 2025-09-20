@@ -99,6 +99,7 @@ Thumbs.db
 # Test files
 test-*
 *test*
+!client/src/pages/Test/
 
 # Uploads
 uploads/
