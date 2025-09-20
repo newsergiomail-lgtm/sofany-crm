@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мобильное приложение производства - Sofany CRM</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0d9488">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Sofany Production">
+    
+    <!-- PWA Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+            min-height: 100vh;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .header .user-info {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            margin-top: 0.25rem;
+        }
+
+        .main-content {
+            padding: 1rem;
+        }
+
+        .scan-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .scan-button {
+            background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .scan-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(13, 148, 136, 0.3);
+        }
+
+        .scan-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .camera-container {
+            position: relative;
+            margin: 1rem 0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            display: none;
+        }
+
+        #video {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 2px solid #0d9488;
+            border-radius: 12px;
+            background: transparent;
+        }
+
+        .camera-overlay::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border: 2px solid rgba(13, 148, 136, 0.3);
+            border-radius: 12px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #0d9488;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .order-number {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #0d9488;
+        }
+
+        .order-status {
+            background: #dcfce7;
+            color: #166534;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .order-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #0d9488;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0f766e;
+        }
+
+        .btn-success {
+            background: #16a34a;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #15803d;
+        }
+
+        .btn-warning {
+            background: #d97706;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #b45309;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #0d9488;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .notifications {
+            position: fixed;
+            top: 80px;
+            left: 1rem;
+            right: 1rem;
+            z-index: 1000;
+        }
+
+        .notification {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-left: 4px solid #0d9488;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .notification-message {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .footer {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .footer-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .footer-btn {
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: #6b7280;
+            font-size: 0.75rem;
+        }
+
+        .footer-btn.active {
+            background: #0d9488;
+            color: white;
+            border-color: #0d9488;
+        }
+
+        .footer-btn:hover {
+            background: #f3f4f6;
+        }
+
+        .footer-btn.active:hover {
+            background: #0f766e;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                margin: 0;
+                box-shadow: none;
+            }
+            
+            .main-content {
+                padding: 0.75rem;
+            }
+            
+            .order-info {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🏭 Производство</h1>
+            <div class="user-info" id="userInfo">Загрузка...</div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="notifications" id="notifications"></div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Scan Section -->
+            <div class="scan-section">
+                <h2 style="margin-bottom: 1rem;">Сканирование QR-кода</h2>
+                <button class="scan-button" id="scanButton" onclick="toggleCamera()">
+                    📱 Сканировать QR-код
+                </button>
+                
+                <div class="camera-container" id="cameraContainer">
+                    <video id="video" autoplay></video>
+                    <div class="camera-overlay"></div>
+                </div>
+                
+                <div id="scanResult" class="hidden"></div>
+            </div>
+
+            <!-- Current Order -->
+            <div id="currentOrder" class="hidden">
+                <div class="order-card">
+                    <div class="order-header">
+                        <div class="order-number" id="orderNumber">#0000</div>
+                        <div class="order-status" id="orderStatus">В работе</div>
+                    </div>
+                    
+                    <div class="order-info">
+                        <div class="info-item">
+                            <div class="info-label">Изделие</div>
+                            <div class="info-value" id="productName">-</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Этап</div>
+                            <div class="info-value" id="stageName">-</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Создан</div>
+                            <div class="info-value" id="createdAt">-</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Статус</div>
+                            <div class="info-value" id="productionStatus">-</div>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="confirmButton" onclick="confirmOrder()">
+                            ✅ Принять заказ
+                        </button>
+                        <button class="btn btn-success" id="readyButton" onclick="markReady()">
+                            ✅ Готово
+                        </button>
+                        <button class="btn btn-warning" id="returnButton" onclick="showReturnModal()">
+                            🔄 Доработка
+                        </button>
+                        <button class="btn btn-danger" id="defectButton" onclick="showDefectModal()">
+                            ❌ Брак
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+            </div>
+
+            <!-- Error -->
+            <div id="error" class="error hidden"></div>
+
+            <!-- Success -->
+            <div id="success" class="success hidden"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-buttons">
+                <a href="#" class="footer-btn active" onclick="showScanSection()">
+                    📱 Сканировать
+                </a>
+                <a href="#" class="footer-btn" onclick="showOrders()">
+                    📋 Заказы
+                </a>
+                <a href="#" class="footer-btn" onclick="showProfile()">
+                    👤 Профиль
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Scanner Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
+    
+    <script>
+        // Global variables
+        let currentUser = null;
+        let currentOrder = null;
+        let qrScanner = null;
+        let isScanning = false;
+
+        // API Base URL
+        const API_BASE = window.location.origin + '/api';
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        // Initialize application
+        async function initializeApp() {
+            try {
+                // Check if user is logged in
+                const token = localStorage.getItem('token');
+                const userId = localStorage.getItem('userId');
+                const userRole = localStorage.getItem('userRole');
+
+                if (!token || !userId) {
+                    showError('Требуется авторизация. Пожалуйста, войдите в систему.');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                    return;
+                }
+
+                currentUser = {
+                    id: userId,
+                    role: userRole,
+                    token: token
+                };
+
+                updateUserInfo();
+                loadNotifications();
+
+            } catch (error) {
+                console.error('Ошибка инициализации:', error);
+                showError('Ошибка инициализации приложения');
+            }
+        }
+
+        // Update user info display
+        function updateUserInfo() {
+            const userInfoEl = document.getElementById('userInfo');
+            userInfoEl.textContent = `Пользователь #${currentUser.id} | ${currentUser.role}`;
+        }
+
+        // Toggle camera for QR scanning
+        async function toggleCamera() {
+            const scanButton = document.getElementById('scanButton');
+            const cameraContainer = document.getElementById('cameraContainer');
+            const scanResult = document.getElementById('scanResult');
+
+            if (!isScanning) {
+                try {
+                    scanButton.disabled = true;
+                    scanButton.textContent = '🔄 Запуск камеры...';
+
+                    // Start camera
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: 'environment' } 
+                    });
+                    
+                    const video = document.getElementById('video');
+                    video.srcObject = stream;
+                    video.play();
+
+                    // Initialize QR scanner
+                    qrScanner = new QrScanner(video, (result) => {
+                        handleQRScan(result);
+                    }, {
+                        highlightScanRegion: true,
+                        highlightCodeOutline: true,
+                    });
+
+                    await qrScanner.start();
+                    
+                    cameraContainer.style.display = 'block';
+                    scanButton.textContent = '⏹️ Остановить сканирование';
+                    isScanning = true;
+
+                } catch (error) {
+                    console.error('Ошибка запуска камеры:', error);
+                    showError('Ошибка доступа к камере. Проверьте разрешения.');
+                    scanButton.disabled = false;
+                    scanButton.textContent = '📱 Сканировать QR-код';
+                }
+            } else {
+                // Stop scanning
+                if (qrScanner) {
+                    qrScanner.stop();
+                    qrScanner.destroy();
+                    qrScanner = null;
+                }
+
+                const video = document.getElementById('video');
+                if (video.srcObject) {
+                    const tracks = video.srcObject.getTracks();
+                    tracks.forEach(track => track.stop());
+                    video.srcObject = null;
+                }
+
+                cameraContainer.style.display = 'none';
+                scanButton.disabled = false;
+                scanButton.textContent = '📱 Сканировать QR-код';
+                isScanning = false;
+            }
+        }
+
+        // Handle QR code scan result
+        async function handleQRScan(result) {
+            try {
+                showLoading('Обработка QR-кода...');
+                
+                const response = await fetch(`${API_BASE}/production/scan-qr`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'user_id': currentUser.id,
+                        'role': currentUser.role,
+                        'Authorization': `Bearer ${currentUser.token}`
+                    },
+                    body: JSON.stringify({ qrCode: result })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentOrder = data.order;
+                    displayOrder(data.order);
+                    showSuccess('QR-код успешно отсканирован');
+                } else {
+                    showError(data.error || 'Ошибка сканирования QR-кода');
+                }
+
+            } catch (error) {
+                console.error('Ошибка обработки QR-кода:', error);
+                showError('Ошибка обработки QR-кода');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Display order information
+        function displayOrder(order) {
+            document.getElementById('orderNumber').textContent = `#${order.order_number}`;
+            document.getElementById('productName').textContent = order.product_name || '-';
+            document.getElementById('stageName').textContent = order.current_stage.name;
+            document.getElementById('createdAt').textContent = new Date(order.created_at).toLocaleDateString('ru-RU');
+            document.getElementById('productionStatus').textContent = order.production_status;
+
+            // Show order card
+            document.getElementById('currentOrder').classList.remove('hidden');
+            
+            // Stop scanning
+            toggleCamera();
+        }
+
+        // Confirm order acceptance
+        async function confirmOrder() {
+            if (!currentOrder) return;
+
+            try {
+                showLoading('Подтверждение заказа...');
+
+                const response = await fetch(`${API_BASE}/production/confirm-order`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'user_id': currentUser.id,
+                        'role': currentUser.role,
+                        'Authorization': `Bearer ${currentUser.token}`
+                    },
+                    body: JSON.stringify({
+                        orderId: currentOrder.id,
+                        stageId: currentOrder.current_stage.id,
+                        notes: 'Заказ принят в работу'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess('Заказ успешно принят в работу');
+                    currentOrder = null;
+                    document.getElementById('currentOrder').classList.add('hidden');
+                } else {
+                    showError(data.error || 'Ошибка подтверждения заказа');
+                }
+
+            } catch (error) {
+                console.error('Ошибка подтверждения заказа:', error);
+                showError('Ошибка подтверждения заказа');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Mark order as ready
+        async function markReady() {
+            if (!currentOrder) return;
+
+            try {
+                showLoading('Отметка готовности...');
+
+                const response = await fetch(`${API_BASE}/production/mark-ready`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'user_id': currentUser.id,
+                        'role': currentUser.role,
+                        'Authorization': `Bearer ${currentUser.token}`
+                    },
+                    body: JSON.stringify({
+                        orderId: currentOrder.id,
+                        notes: 'Заказ готов к передаче'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess('Заказ отмечен как готовый');
+                    currentOrder = null;
+                    document.getElementById('currentOrder').classList.add('hidden');
+                } else {
+                    showError(data.error || 'Ошибка отметки готовности');
+                }
+
+            } catch (error) {
+                console.error('Ошибка отметки готовности:', error);
+                showError('Ошибка отметки готовности');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Show return modal (rework)
+        function showReturnModal() {
+            const reason = prompt('Причина доработки:');
+            if (reason) {
+                returnOrder('rework', reason);
+            }
+        }
+
+        // Show defect modal
+        function showDefectModal() {
+            const reason = prompt('Причина брака:');
+            if (reason) {
+                returnOrder('defect', reason);
+            }
+        }
+
+        // Return order for rework or defect
+        async function returnOrder(returnType, reason) {
+            if (!currentOrder) return;
+
+            try {
+                showLoading('Возврат заказа...');
+
+                const response = await fetch(`${API_BASE}/production/return-order`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'user_id': currentUser.id,
+                        'role': currentUser.role,
+                        'Authorization': `Bearer ${currentUser.token}`
+                    },
+                    body: JSON.stringify({
+                        orderId: currentOrder.id,
+                        fromStageId: currentOrder.current_stage.id,
+                        toStageId: currentOrder.current_stage.id - 1, // Previous stage
+                        returnType: returnType,
+                        reason: reason
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess(`Заказ возвращен на ${returnType === 'rework' ? 'доработку' : 'брак'}`);
+                    currentOrder = null;
+                    document.getElementById('currentOrder').classList.add('hidden');
+                } else {
+                    showError(data.error || 'Ошибка возврата заказа');
+                }
+
+            } catch (error) {
+                console.error('Ошибка возврата заказа:', error);
+                showError('Ошибка возврата заказа');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Load notifications
+        async function loadNotifications() {
+            try {
+                const response = await fetch(`${API_BASE}/production/notifications`, {
+                    headers: {
+                        'user_id': currentUser.id,
+                        'role': currentUser.role,
+                        'Authorization': `Bearer ${currentUser.token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayNotifications(data.notifications);
+                }
+
+            } catch (error) {
+                console.error('Ошибка загрузки уведомлений:', error);
+            }
+        }
+
+        // Display notifications
+        function displayNotifications(notifications) {
+            const container = document.getElementById('notifications');
+            container.innerHTML = '';
+
+            notifications.slice(0, 3).forEach(notification => {
+                const div = document.createElement('div');
+                div.className = 'notification';
+                div.innerHTML = `
+                    <div class="notification-title">${notification.title}</div>
+                    <div class="notification-message">${notification.message}</div>
+                `;
+                container.appendChild(div);
+
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    div.remove();
+                }, 5000);
+            });
+        }
+
+        // UI Helper functions
+        function showLoading(message = 'Загрузка...') {
+            const loading = document.getElementById('loading');
+            loading.innerHTML = `<div class="spinner"></div><div style="margin-top: 1rem;">${message}</div>`;
+            loading.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+        }
+
+        function showError(message) {
+            const error = document.getElementById('error');
+            error.textContent = message;
+            error.classList.remove('hidden');
+            setTimeout(() => error.classList.add('hidden'), 5000);
+        }
+
+        function showSuccess(message) {
+            const success = document.getElementById('success');
+            success.textContent = message;
+            success.classList.remove('hidden');
+            setTimeout(() => success.classList.add('hidden'), 3000);
+        }
+
+        // Navigation functions
+        function showScanSection() {
+            // Already showing scan section
+        }
+
+        function showOrders() {
+            showError('Функция "Заказы" в разработке');
+        }
+
+        function showProfile() {
+            showError('Функция "Профиль" в разработке');
+        }
+
+        // Service Worker registration for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

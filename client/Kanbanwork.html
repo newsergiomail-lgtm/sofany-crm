@@ -1,0 +1,3889 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sofany Pro CRM - Канбан</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+    :root {
+        --primary: #0ea5a5;
+        --primary-dark: #0b8f8f;
+        --primary-light: #e0f7f7;
+        --success: #10b981;
+        --success-light: #d1fae5;
+        --warning: #f59e0b;
+        --warning-light: #fef3c7;
+        --error: #ef4444;
+        --error-light: #fee2e2;
+        --text: #0f172a;
+        --text-muted: #64748b;
+        --bg: #f8fafc;
+        --card-bg: #ffffff;
+        --border: #e2e8f0;
+        --border-light: #f1f5f9;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --golden-ratio: 61.8%;
+    }
+
+    .dark-theme {
+        --primary: #0ea5a5;
+        --primary-dark: #0b8f8f;
+        --primary-light: #1a3e3e;
+        --text: #e2e8f0;
+        --text-muted: #94a3b8;
+        --bg: #0f172a;
+        --card-bg: #1e293b;
+        --border: #334155;
+        --border-light: #1e293b;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Inter', sans-serif;
+    }
+
+    body {
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        padding: 1.5rem;
+        position: relative;
+        overflow-x: hidden;
+        transition: background 0.3s, color 0.3s;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .logo {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .theme-toggle {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 2rem;
+        padding: 0.5rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s;
+    }
+
+    .theme-toggle:hover {
+        box-shadow: var(--shadow);
+    }
+
+    .theme-icon {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Канбан доска */
+    .kanban-board {
+        display: flex;
+        gap: 1.5rem;
+        padding-bottom: 1rem;
+        overflow-x: hidden;
+        transition: overflow-x 0.3s;
+    }
+
+    .kanban-board:hover {
+        overflow-x: auto;
+    }
+
+    .kanban-column {
+        min-width: 320px;
+        background: var(--card-bg);
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-light);
+    }
+
+    .column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .column-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        transition: all 0.2s;
+    }
+
+    .column-title:hover {
+        background: var(--bg);
+    }
+
+    .column-sum {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--primary);
+        background: var(--primary-light);
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.5rem;
+        display: inline-block;
+        width: fit-content;
+    }
+
+    .column-title-input {
+        font-size: 1.125rem;
+        font-weight: 600;
+        border: 1px solid var(--primary);
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+        width: 100%;
+    }
+
+    .column-count {
+        background: var(--primary-light);
+        color: var(--primary);
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 1rem;
+    }
+
+    .column-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .column-action {
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.2s;
+        padding: 0.25rem;
+        border-radius: 0.25rem;
+    }
+
+    .column-action:hover {
+        color: var(--primary);
+        background: var(--primary-light);
+    }
+
+    .column-delete {
+        color: var(--error) !important;
+    }
+
+    .column-delete:hover {
+        color: white !important;
+        background: var(--error) !important;
+        transform: scale(1.05);
+    }
+
+    /* Скрываем кнопку удаления для системных колонок */
+    .kanban-column[data-column-id="1"] .column-delete,
+    .kanban-column[data-column-id="2"] .column-delete,
+    .kanban-column[data-column-id="3"] .column-delete,
+    .kanban-column[data-column-id="4"] .column-delete,
+    .kanban-column[data-column-id="5"] .column-delete,
+    .kanban-column[data-column-id="6"] .column-delete,
+    .kanban-column[data-column-id="7"] .column-delete {
+        display: none;
+    }
+
+    /* Карточки */
+    .kanban-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        min-height: 100px;
+    }
+
+    .kanban-card {
+        background: var(--card-bg);
+        border-radius: 0.5rem;
+        padding: 1.25rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-light);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .kanban-card:hover {
+        box-shadow: var(--shadow-hover);
+        transform: translateY(-2px);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .card-amount {
+        background: var(--success);
+        color: white;
+        font-size: 0.875rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+
+    .card-priority {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .priority-high {
+        background: var(--error-light);
+        color: var(--error);
+    }
+
+    .priority-medium {
+        background: var(--warning-light);
+        color: var(--warning);
+    }
+
+    .priority-low {
+        background: var(--success-light);
+        color: var(--success);
+    }
+
+    .card-title {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        line-height: 1.4;
+        font-size: 1.1rem;
+    }
+
+    .card-dates {
+        display: flex;
+        justify-content: space-between;
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+
+    .prepayment {
+        font-weight: 600;
+        color: var(--success);
+    }
+
+    .card-footer {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Стили для веток производства */
+    .card-branches {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        padding: 0.5rem;
+        background: var(--bg);
+        border-radius: 0.5rem;
+        border: 1px solid var(--border-light);
+    }
+
+    .branch-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .branch-icon {
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.625rem;
+    }
+
+    .branch-frame {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .branch-upholstery {
+        background: #f3e8ff;
+        color: #7c3aed;
+    }
+
+    .branch-status {
+        font-size: 0.625rem;
+        padding: 0.125rem 0.375rem;
+        border-radius: 0.25rem;
+        font-weight: 600;
+    }
+
+    .status-not-started {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+
+    .status-in-progress {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .status-completed {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .branch-label {
+        font-size: 0.625rem;
+        color: var(--text-muted);
+        margin-right: 0.25rem;
+    }
+
+    .client-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .client-name {
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    /* Форма добавления карточки */
+    .add-card-form {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background: var(--bg);
+        border: 1px dashed var(--border);
+    }
+
+    .form-group {
+        margin-bottom: 0.75rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 0.375rem;
+        font-size: 1rem;
+        background: var(--card-bg);
+        color: var(--text);
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+    }
+
+    /* Кнопки */
+    .btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 0.375rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+    }
+
+    .btn-secondary {
+        background-color: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--border);
+    }
+
+    /* Стили для перетаскивания */
+    .kanban-card.dragging {
+        opacity: 0.5;
+        transform: rotate(5deg);
+    }
+
+    .kanban-column.drop-area {
+        background-color: var(--primary-light);
+        border: 2px dashed var(--primary);
+    }
+
+    /* Правая панель */
+    .detail-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 61.8%; /* Золотое сечение */
+        max-width: 650px;
+        min-width: 450px;
+        height: 100vh;
+        background: var(--card-bg);
+        box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 1.5rem;
+        transform: translateX(100%);
+        opacity: 0;
+        visibility: hidden;
+        transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s;
+        border-radius: 0.75rem 0 0 0.75rem; /* Скругление только с левой стороны */
+        box-sizing: border-box;
+        contain: layout style;
+    }
+
+    .detail-panel.active {
+        transform: translateX(0);
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text);
+    }
+
+    .panel-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .close-panel, .add-column-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: all 0.2s;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+    }
+
+    .close-panel:hover, .add-column-btn:hover {
+        color: var(--error);
+        background: var(--error-light);
+    }
+
+    .client-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .client-details h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .client-details p {
+        color: var(--text-muted);
+    }
+
+    .order-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .detail-item {
+        padding: 1rem;
+        background: var(--bg);
+        border-radius: 0.5rem;
+    }
+
+    .detail-item label {
+        display: block;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    .detail-item .value {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .select-status {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 0.375rem;
+        background: var(--card-bg);
+        font-weight: 500;
+        color: var(--text);
+    }
+
+    .panel-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 2;
+        background: var(--card-bg);
+    }
+
+    .tab {
+        padding: 0.75rem 1.5rem;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+        font-weight: 500;
+    }
+
+    .tab.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+    }
+
+    .tab-content {
+        display: none;
+        position: relative;
+        z-index: 1;
+    }
+
+    .tab-content.active {
+        display: block;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Секции в табах */
+    .project-description-section,
+    .drawings-section,
+    .comments-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: var(--bg);
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-light);
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .section-header h3 {
+        margin: 0;
+        color: var(--text);
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
+
+    .edit-btn,
+    .add-file-btn,
+    .add-comment-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .edit-btn:hover,
+    .add-file-btn:hover,
+    .add-comment-btn:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+
+    /* Поля описания проекта */
+    .description-field {
+        margin-bottom: 1.5rem;
+    }
+
+    .description-field label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text);
+        font-size: 0.875rem;
+    }
+
+    .field-content {
+        position: relative;
+    }
+
+    .field-value {
+        display: block;
+        padding: 0.75rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        color: var(--text);
+        min-height: 2.5rem;
+        line-height: 1.5;
+    }
+
+    .field-input,
+    .field-textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--primary);
+        border-radius: 0.5rem;
+        background: var(--card-bg);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 0.875rem;
+        resize: vertical;
+    }
+
+    .field-textarea {
+        min-height: 4rem;
+    }
+
+    .description-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+    }
+
+    /* Файлы */
+    .files-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .file-download {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .file-download:hover {
+        border-color: var(--primary);
+        box-shadow: 0 2px 8px rgba(14, 165, 165, 0.1);
+    }
+
+    .file-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex: 1;
+    }
+
+    .file-icon {
+        color: var(--primary);
+        flex-shrink: 0;
+    }
+
+    .file-name {
+        font-weight: 500;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+
+    .file-size {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .file-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .download-btn {
+        padding: 0.5rem 1rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        font-size: 0.75rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .download-btn:hover {
+        background: var(--primary-dark);
+    }
+
+    .delete-btn {
+        width: 2rem;
+        height: 2rem;
+        background: var(--error);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .delete-btn:hover {
+        background: #dc2626;
+        transform: scale(1.1);
+    }
+
+    .comment {
+        padding: 1rem;
+        background: var(--card-bg);
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid var(--border-light);
+    }
+
+    /* Финансовый блок */
+    .finance-section,
+    .payments-history-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: var(--bg);
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-light);
+    }
+
+    .finance-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.5rem;
+        background: var(--card-bg);
+        border-radius: 0.75rem;
+        border: 1px solid var(--border);
+        transition: all 0.2s ease;
+    }
+
+    .stat-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px rgba(14, 165, 165, 0.1);
+    }
+
+    .stat-icon {
+        color: var(--primary);
+        flex-shrink: 0;
+    }
+
+    .stat-content {
+        flex: 1;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .finance-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .detail-field {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .detail-field label {
+        font-weight: 500;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .field-select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--primary);
+        border-radius: 0.5rem;
+        background: var(--card-bg);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 0.875rem;
+    }
+
+    .finance-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+    }
+
+    /* История платежей */
+    .payments-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .payment-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .payment-item:hover {
+        border-color: var(--primary);
+        box-shadow: 0 2px 8px rgba(14, 165, 165, 0.1);
+    }
+
+    .payment-info {
+        flex: 1;
+    }
+
+    .payment-amount {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+
+    .payment-type {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .payment-details {
+        flex: 1;
+        text-align: center;
+    }
+
+    .payment-date {
+        font-size: 0.875rem;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+
+    .payment-method {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .payment-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .edit-payment-btn,
+    .delete-payment-btn {
+        width: 2rem;
+        height: 2rem;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    
+    .edit-payment-btn svg,
+    .delete-payment-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .edit-payment-btn {
+        background: var(--warning-light);
+        color: var(--warning);
+    }
+
+    .edit-payment-btn:hover {
+        background: var(--warning);
+        color: white;
+    }
+
+    .delete-payment-btn {
+        background: var(--error-light);
+        color: var(--error);
+    }
+
+    .delete-payment-btn:hover {
+        background: var(--error);
+        color: white;
+    }
+
+    /* Таблица материалов */
+    .materials-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: var(--bg);
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-light);
+    }
+
+    .materials-table-container {
+        overflow-x: auto;
+        border-radius: 0.5rem;
+        border: 1px solid var(--border);
+    }
+
+    .materials-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--card-bg);
+    }
+
+    .materials-table thead {
+        background: var(--primary-light);
+    }
+
+    .materials-table th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text);
+        border-bottom: 1px solid var(--border);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .materials-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-light);
+        color: var(--text);
+        font-size: 0.875rem;
+    }
+
+    .materials-table tbody tr:hover {
+        background: var(--bg);
+    }
+
+    .materials-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .materials-table .actions-cell {
+        width: 120px;
+        text-align: center;
+    }
+
+    .edit-material-btn,
+    .delete-material-btn {
+        width: 2rem;
+        height: 2rem;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 0.25rem;
+        transition: all 0.2s ease;
+    }
+    
+    .edit-material-btn svg,
+    .delete-material-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .edit-material-btn {
+        background: var(--warning-light);
+        color: var(--warning);
+    }
+
+    .edit-material-btn:hover {
+        background: var(--warning);
+        color: white;
+        transform: scale(1.05);
+    }
+
+    .delete-material-btn {
+        background: var(--error-light);
+        color: var(--error);
+    }
+
+    .delete-material-btn:hover {
+        background: var(--error);
+        color: white;
+        transform: scale(1.05);
+    }
+
+    .add-material-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .add-material-btn:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+
+    .comment-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+
+    .comment-author {
+        font-weight: 600;
+    }
+
+    .comment-time {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+
+    .comment-text {
+        line-height: 1.5;
+    }
+
+    .file-download {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem;
+        background: var(--bg);
+        border-radius: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .file-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .file-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-light);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+    }
+
+    .file-name {
+        font-weight: 500;
+    }
+
+    .file-size {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .download-btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.2s;
+    }
+
+    .download-btn:hover {
+        background: var(--primary-dark);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+        padding: 1rem;
+        background: var(--bg);
+        border-radius: 0.5rem;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .material-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem;
+        background: var(--bg);
+        border-radius: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .material-name {
+        font-weight: 500;
+    }
+
+    .material-quantity {
+        color: var(--text-muted);
+    }
+
+    .contacts-section,
+    .delivery-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: var(--bg);
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-light);
+    }
+    
+    .contacts-info,
+    .delivery-info {
+        padding: 0;
+        background: transparent;
+        border-radius: 0;
+        margin-bottom: 0;
+    }
+
+    .info-row {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .info-row:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+        font-size: 0.875rem;
+    }
+
+    .info-value {
+        color: var(--text);
+        font-weight: 500;
+    }
+    
+    .field-content {
+        position: relative;
+        width: 100%;
+    }
+    
+    .field-select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--primary);
+        border-radius: 0.5rem;
+        background: var(--card-bg);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 0.875rem;
+    }
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s;
+    }
+
+    .overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Оверлей для правой панели */
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 1024px) {
+        .detail-panel {
+            width: 75%;
+            max-width: 600px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .kanban-column {
+            min-width: 280px;
+        }
+        
+        .header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+        
+        .detail-panel {
+            width: 100%;
+            min-width: unset;
+            max-width: 100%;
+            transform: translateX(100%);
+            border-radius: 0;
+            padding: 1rem;
+        }
+        
+        .detail-panel.active {
+            transform: translateX(0);
+        }
+
+        .order-details {
+            grid-template-columns: 1fr;
+        }
+    }
+    </style>
+</head>
+<body>
+    <!-- Шапка -->
+    <div class="header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+            Sofany Pro CRM
+            </div>
+
+        <button class="theme-toggle" id="theme-toggle">
+            <div class="theme-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </div>
+            <span>Темная тема</span>
+        </button>
+        
+        <button class="btn btn-outline" onclick="loadKanbanData()" style="margin-left: 1rem;">
+            🔄 Обновить данные
+        </button>
+    </div>
+
+    <!-- Канбан доска -->
+    <div class="kanban-board" id="kanban-board">
+        <!-- Колонка 1 -->
+        <div class="kanban-column" data-column-id="1">
+            <div class="column-header">
+                <div class="column-title">
+                    <span>Новые заказы</span>
+                    <span class="column-sum" id="column-sum-1">106 400 ₽</span>
+                    <span class="column-count">3</span>
+                </div>
+                <div class="column-actions">
+                    <div class="column-action" onclick="startEditingColumnTitle(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                    </div>
+                    <div class="column-action" onclick="toggleAddCardForm(this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action column-delete" onclick="deleteColumn(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kanban-cards">
+                <div class="kanban-card" draggable="true" data-card-id="1" data-card-amount="42500" onclick="openDetailPanel(this)">
+                    <div class="card-header">
+                        <div class="card-amount">42 500 ₽</div>
+                        <div class="card-priority priority-high">Высокий</div>
+                    </div>
+                    <h3 class="card-title">Диван "Неаполь" с механизмом аккордеон</h3>
+                    <div class="card-dates">
+                        <span>Создан: 10.09.2023</span>
+                        <span class="prepayment">Предоплата: 15 000 ₽</span>
+                    </div>
+                    
+                    <!-- Ветки производства -->
+                    <div class="card-branches">
+                        <div class="branch-item">
+                            <div class="branch-icon branch-frame">🔨</div>
+                            <span class="branch-label">Каркас:</span>
+                            <span class="branch-status status-not-started">Не начат</span>
+                        </div>
+                        <div class="branch-item">
+                            <div class="branch-icon branch-upholstery">🧵</div>
+                            <span class="branch-label">Обивка:</span>
+                            <span class="branch-status status-not-started">Не начат</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="client-avatar">АЧ</div>
+                        <div class="client-name">Алексей Чернов</div>
+                    </div>
+                </div>
+
+                <div class="kanban-card" draggable="true" data-card-id="2" data-card-amount="28700" onclick="openDetailPanel(this)">
+                    <div class="card-header">
+                        <div class="card-amount">28 700 ₽</div>
+                        <div class="card-priority priority-medium">Средний</div>
+                    </div>
+                    <h3 class="card-title">Кресло "Мелисса" с подголовником</h3>
+                    <div class="card-dates">
+                        <span>Создан: 12.09.2023</span>
+                        <span class="prepayment">Предоплата: 10 000 ₽</span>
+                    </div>
+                    <div class="card-footer">
+                        <div class="client-avatar">МП</div>
+                        <div class="client-name">Мария Петрова</div>
+                    </div>
+                </div>
+
+                <div class="kanban-card" draggable="true" data-card-id="3" data-card-amount="35200" onclick="openDetailPanel(this)">
+                    <div class="card-header">
+                        <div class="card-amount">35 200 ₽</div>
+                        <div class="card-priority priority-low">Низкий</div>
+                    </div>
+                    <h3 class="card-title">Стенка "Модерн" с подсветкой</h3>
+                    <div class="card-dates">
+                        <span>Создан: 14.09.2023</span>
+                        <span class="prepayment">Предоплата: 12 000 ₽</span>
+                    </div>
+                    <div class="card-footer">
+                        <div class="client-avatar">ДК</div>
+                        <div class="client-name">Дмитрий Козлов</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="add-card-form" style="display: none;">
+                        <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Название изделия">
+                        </div>
+                        <div class="form-group">
+                    <input type="number" class="form-input" placeholder="Сумма заказа">
+                        </div>
+                        <div class="form-group">
+                    <input type="number" class="form-input" placeholder="Предоплата">
+                        </div>
+                        <div class="form-group">
+                    <select class="form-input">
+                        <option value="high">Высокий приоритет</option>
+                        <option value="medium">Средний приоритет</option>
+                        <option value="low">Низкий приоритет</option>
+                    </select>
+                        </div>
+                        <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Имя клиента">
+                        </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="cancelAddCard(this)">Отмена</button>
+                    <button class="btn btn-primary" onclick="addNewCard(this)">Добавить</button>
+                    </div>
+                    </div>
+                </div>
+
+        <!-- Колонка 2 -->
+        <div class="kanban-column" data-column-id="2">
+            <div class="column-header">
+                <div class="column-title">
+                    <span>В производстве</span>
+                    <span class="column-sum" id="column-sum-2">75 100 ₽</span>
+                    <span class="column-count">2</span>
+                </div>
+                <div class="column-actions">
+                    <div class="column-action" onclick="startEditingColumnTitle(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                    </div>
+                    <div class="column-action" onclick="toggleAddCardForm(this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action column-delete" onclick="deleteColumn(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kanban-cards">
+                <div class="kanban-card" draggable="true" data-card-id="4" data-card-amount="51300" onclick="openDetailPanel(this)">
+                    <div class="card-header">
+                        <div class="card-amount">51 300 ₽</div>
+                        <div class="card-priority priority-high">Высокий</div>
+                    </div>
+                    <h3 class="card-title">Гостиная "Милан" с кожаной отделкой</h3>
+                    <div class="card-dates">
+                        <span>Создан: 05.09.2023</span>
+                        <span class="prepayment">Предоплата: 20 000 ₽</span>
+                    </div>
+                    <div class="card-footer">
+                        <div class="client-avatar">ОС</div>
+                        <div class="client-name">Ольга Семенова</div>
+                    </div>
+                </div>
+
+                <div class="kanban-card" draggable="true" data-card-id="5" data-card-amount="23800" onclick="openDetailPanel(this)">
+                    <div class="card-header">
+                        <div class="card-amount">23 800 ₽</div>
+                        <div class="card-priority priority-medium">Средний</div>
+                    </div>
+                    <h3 class="card-title">Стол журнальный "Фьюжн" со стеклом</h3>
+                    <div class="card-dates">
+                        <span>Создан: 08.09.2023</span>
+                        <span class="prepayment">Предоплата: 8 000 ₽</span>
+                    </div>
+                    <div class="card-footer">
+                        <div class="client-avatar">ИВ</div>
+                        <div class="client-name">Игорь Васильев</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="add-card-form" style="display: none;">
+                        <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Название изделия">
+                        </div>
+                        <div class="form-group">
+                    <input type="number" class="form-input" placeholder="Сумма заказа">
+                        </div>
+                        <div class="form-group">
+                    <input type="number" class="form-input" placeholder="Предоплата">
+                        </div>
+                <div class="form-group">
+                    <select class="form-input">
+                        <option value="high">Высокий приоритет</option>
+                        <option value="medium">Средний приоритет</option>
+                        <option value="low">Низкий приоритет</option>
+                    </select>
+                    </div>
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Имя клиента">
+                        </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="cancelAddCard(this)">Отмена</button>
+                    <button class="btn btn-primary" onclick="addNewCard(this)">Добавить</button>
+                    </div>
+                    </div>
+                </div>
+
+        <!-- Колонка 3 -->
+        <div class="kanban-column" data-column-id="3">
+            <div class="column-header">
+                <div class="column-title">
+                    <span>Формовка</span>
+                    <span class="column-sum" id="column-sum-3">0 ₽</span>
+                    <span class="column-count">0</span>
+                </div>
+                <div class="column-actions">
+                    <div class="column-action" onclick="startEditingColumnTitle(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action" onclick="toggleAddCardForm(this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action column-delete" onclick="deleteColumn(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kanban-cards">
+                <!-- Карточки будут загружаться динамически -->
+            </div>
+            
+            <div class="add-card-form" style="display: none;">
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Название изделия">
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-input" placeholder="Сумма заказа">
+                </div>
+                <div class="form-group">
+                    <select class="form-input">
+                        <option value="high">Высокий приоритет</option>
+                        <option value="medium">Средний приоритет</option>
+                        <option value="low">Низкий приоритет</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Имя клиента">
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="cancelAddCard(this)">Отмена</button>
+                    <button class="btn btn-primary" onclick="addNewCard(this)">Добавить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Колонка 4 -->
+        <div class="kanban-column" data-column-id="4">
+            <div class="column-header">
+                <div class="column-title">
+                    <span>Столярный цех</span>
+                    <span class="column-sum" id="column-sum-4">0 ₽</span>
+                    <span class="column-count">0</span>
+                </div>
+                <div class="column-actions">
+                    <div class="column-action" onclick="startEditingColumnTitle(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action" onclick="toggleAddCardForm(this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action column-delete" onclick="deleteColumn(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kanban-cards">
+                <!-- Карточки будут загружаться динамически -->
+            </div>
+            
+            <div class="add-card-form" style="display: none;">
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Название изделия">
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-input" placeholder="Сумма заказа">
+                </div>
+                <div class="form-group">
+                    <select class="form-input">
+                        <option value="high">Высокий приоритет</option>
+                        <option value="medium">Средний приоритет</option>
+                        <option value="low">Низкий приоритет</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Имя клиента">
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="cancelAddCard(this)">Отмена</button>
+                    <button class="btn btn-primary" onclick="addNewCard(this)">Добавить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Колонка 5 -->
+        <div class="kanban-column" data-column-id="5">
+            <div class="column-header">
+                <div class="column-title">
+                    <span>Обивка</span>
+                    <span class="column-sum" id="column-sum-5">0 ₽</span>
+                    <span class="column-count">0</span>
+                </div>
+                <div class="column-actions">
+                    <div class="column-action" onclick="startEditingColumnTitle(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action" onclick="toggleAddCardForm(this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action column-delete" onclick="deleteColumn(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kanban-cards">
+                <!-- Карточки будут загружаться динамически -->
+            </div>
+            
+            <div class="add-card-form" style="display: none;">
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Название изделия">
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-input" placeholder="Сумма заказа">
+                </div>
+                <div class="form-group">
+                    <select class="form-input">
+                        <option value="high">Высокий приоритет</option>
+                        <option value="medium">Средний приоритет</option>
+                        <option value="low">Низкий приоритет</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Имя клиента">
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="cancelAddCard(this)">Отмена</button>
+                    <button class="btn btn-primary" onclick="addNewCard(this)">Добавить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Колонка 6 -->
+        <div class="kanban-column" data-column-id="6">
+            <div class="column-header">
+                <div class="column-title">
+                    <span>Швейный цех</span>
+                    <span class="column-sum" id="column-sum-6">0 ₽</span>
+                    <span class="column-count">0</span>
+                </div>
+                <div class="column-actions">
+                    <div class="column-action" onclick="startEditingColumnTitle(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action" onclick="toggleAddCardForm(this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action column-delete" onclick="deleteColumn(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kanban-cards">
+                <!-- Карточки будут загружаться динамически -->
+            </div>
+            
+            <div class="add-card-form" style="display: none;">
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Название изделия">
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-input" placeholder="Сумма заказа">
+                </div>
+                <div class="form-group">
+                    <select class="form-input">
+                        <option value="high">Высокий приоритет</option>
+                        <option value="medium">Средний приоритет</option>
+                        <option value="low">Низкий приоритет</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Имя клиента">
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="cancelAddCard(this)">Отмена</button>
+                    <button class="btn btn-primary" onclick="addNewCard(this)">Добавить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Колонка 7 -->
+        <div class="kanban-column" data-column-id="7">
+            <div class="column-header">
+                <div class="column-title">
+                    <span>Отгружен</span>
+                    <span class="column-sum" id="column-sum-7">0 ₽</span>
+                    <span class="column-count">0</span>
+                </div>
+                <div class="column-actions">
+                    <div class="column-action" onclick="startEditingColumnTitle(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action" onclick="toggleAddCardForm(this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action column-delete" onclick="deleteColumn(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kanban-cards">
+                <!-- Карточки будут загружаться динамически -->
+            </div>
+            
+            <div class="add-card-form" style="display: none;">
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Название изделия">
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-input" placeholder="Сумма заказа">
+                </div>
+                <div class="form-group">
+                    <select class="form-input">
+                        <option value="high">Высокий приоритет</option>
+                        <option value="medium">Средний приоритет</option>
+                        <option value="low">Низкий приоритет</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Имя клиента">
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="cancelAddCard(this)">Отмена</button>
+                    <button class="btn btn-primary" onclick="addNewCard(this)">Добавить</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Оверлей -->
+    <div class="overlay" id="overlay" onclick="closeDetailPanel()"></div>
+
+    <!-- Правая панель деталей -->
+    <div class="detail-panel" id="detail-panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Детали заказа</h2>
+            <div class="panel-actions">
+                <button class="add-column-btn" onclick="createNewColumn()">+</button>
+                <button class="close-panel" onclick="closeDetailPanel()">&times;</button>
+                        </div>
+                    </div>
+
+        <div class="client-info">
+            <div class="client-avatar" id="detail-avatar">АЧ</div>
+            <div class="client-details">
+                <h3 id="detail-client-name">Алексей Чернов</h3>
+                <p id="detail-product">Диван "Неаполь" с механизмом аккордеон</p>
+                    </div>
+                </div>
+
+        <div class="order-details">
+            <div class="detail-item">
+                <label>Статус заказа</label>
+                <select class="select-status" id="detail-status">
+                    <option value="new">Новый заказ</option>
+                    <option value="production">В производстве</option>
+                    <option value="ready">Готов к отгрузке</option>
+                    <option value="shipped">Отгружен</option>
+                    <option value="completed">Завершен</option>
+                </select>
+                    </div>
+            <div class="detail-item">
+                <label>Приоритет</label>
+                <div class="value" id="detail-priority">Высокий</div>
+                    </div>
+            <div class="detail-item">
+                <label>Сумма сделки</label>
+                <div class="value" id="detail-amount">42 500 ₽</div>
+            </div>
+            <div class="detail-item">
+                <label>Предоплата</label>
+                <div class="value" id="detail-prepayment">15 000 ₽</div>
+            </div>
+        </div>
+
+        <div class="panel-tabs">
+            <div class="tab active" data-tab="comments">Комментарии</div>
+            <div class="tab" data-tab="finance">Финансы</div>
+            <div class="tab" data-tab="materials">Материалы</div>
+            <div class="tab" data-tab="contacts">Контакты</div>
+        </div>
+
+        <div class="tab-content active" id="comments-tab">
+            <!-- Блок описания проекта -->
+            <div class="project-description-section">
+                <div class="section-header">
+                    <h3>Описание проекта</h3>
+                    <button class="edit-btn" onclick="toggleEditMode('project-description')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="project-description-content">
+                    <div class="description-field">
+                        <label>Название проекта</label>
+                        <div class="field-content">
+                            <span class="field-value" id="project-name-display">Диван "Неаполь" с механизмом аккордеон</span>
+                            <input type="text" class="field-input" id="project-name-input" value="Диван "Неаполь" с механизмом аккордеон" style="display: none;">
+                </div>
+            </div>
+
+                    <div class="description-field">
+                        <label>Описание</label>
+                        <div class="field-content">
+                            <span class="field-value" id="project-description-display">Классический диван с механизмом аккордеон, обивка из велюра, цвет - темно-синий. Размеры: 200x90x85 см. Дополнительно: подушки в комплекте, ножки из массива дуба.</span>
+                            <textarea class="field-textarea" id="project-description-input" style="display: none;">Классический диван с механизмом аккордеон, обивка из велюра, цвет - темно-синий. Размеры: 200x90x85 см. Дополнительно: подушки в комплекте, ножки из массива дуба.</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="description-field">
+                        <label>Особые требования</label>
+                        <div class="field-content">
+                            <span class="field-value" id="project-requirements-display">Доставка в разобранном виде, сборка на месте. Гарантия 2 года.</span>
+                            <textarea class="field-textarea" id="project-requirements-input" style="display: none;">Доставка в разобранном виде, сборка на месте. Гарантия 2 года.</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="description-actions" id="project-description-actions" style="display: none;">
+                        <button class="btn btn-secondary" onclick="cancelEdit('project-description')">Отмена</button>
+                        <button class="btn btn-primary" onclick="saveProjectDescription()">Сохранить</button>
+                            </div>
+                            </div>
+                        </div>
+            
+            <!-- Чертежи и файлы -->
+            <div class="drawings-section">
+                <div class="section-header">
+                    <h3>Чертежи и документы</h3>
+                    <button class="add-file-btn" onclick="addNewFile()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                        Добавить файл
+                    </button>
+                </div>
+                
+                <div class="files-list" id="files-list">
+                    <div class="file-download">
+                        <div class="file-info">
+                            <div class="file-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="file-name">Чертеж дивана.pdf</div>
+                                <div class="file-size">2.4 МБ</div>
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="download-btn">Скачать</button>
+                            <button class="delete-btn" onclick="deleteFile(this)">×</button>
+                        </div>
+                    </div>
+                    
+                    <div class="file-download">
+                        <div class="file-info">
+                            <div class="file-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="file-name">Спецификация материалов.xlsx</div>
+                                <div class="file-size">156 КБ</div>
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="download-btn">Скачать</button>
+                            <button class="delete-btn" onclick="deleteFile(this)">×</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Комментарии -->
+            <div class="comments-section">
+                <div class="section-header">
+                    <h3>Комментарии</h3>
+                    <button class="add-comment-btn" onclick="addNewComment()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            <line x1="13" y1="8" x2="13" y2="16"></line>
+                            <line x1="9" y1="12" x2="17" y2="12"></line>
+                                </svg>
+                        Добавить комментарий
+                    </button>
+                            </div>
+                
+                <div class="comments-list" id="comments-list">
+                    <div class="comment">
+                        <div class="comment-header">
+                            <span class="comment-author">Менеджер</span>
+                            <span class="comment-time">10.09.2023 14:30</span>
+                            </div>
+                        <div class="comment-text">
+                            Клиент подтвердил заказ. Предоплата внесена.
+                        </div>
+                    </div>
+                    
+                    <div class="comment">
+                        <div class="comment-header">
+                            <span class="comment-author">Алексей Чернов</span>
+                            <span class="comment-time">11.09.2023 10:15</span>
+                        </div>
+                        <div class="comment-text">
+                            Уточнил детали по цвету обивки. Отправил подтверждение на почту.
+                        </div>
+                    </div>
+                        </div>
+                    </div>
+                </div>
+
+        <div class="tab-content" id="finance-tab">
+            <!-- Финансовый блок -->
+            <div class="finance-section">
+                <div class="section-header">
+                    <h3>Финансовая информация</h3>
+                    <button class="edit-btn" onclick="toggleEditMode('finance-section')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Основные финансовые показатели -->
+                <div class="finance-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="1" x2="12" y2="23"></line>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="finance-total-amount">42 500 ₽</div>
+                            <div class="stat-label">Общая сумма заказа</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12,6 12,12 16,14"></polyline>
+                            </svg>
+                    </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="finance-prepayment">15 000 ₽</div>
+                            <div class="stat-label">Предоплата</div>
+                    </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                            </svg>
+                    </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="finance-remaining">27 500 ₽</div>
+                            <div class="stat-label">Остаток к оплате</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="finance-prepayment-percent">35%</div>
+                            <div class="stat-label">Процент предоплаты</div>
+                </div>
+            </div>
+        </div>
+
+                <!-- Детальная финансовая информация -->
+                <div class="finance-details">
+                    <div class="detail-field">
+                        <label>Способ оплаты</label>
+                        <div class="field-content">
+                            <span class="field-value" id="payment-method-display">Банковский перевод</span>
+                            <select class="field-select" id="payment-method-input" style="display: none;">
+                                <option value="bank_transfer">Банковский перевод</option>
+                                <option value="cash">Наличные</option>
+                                <option value="card">Банковская карта</option>
+                                <option value="installment">Рассрочка</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-field">
+                        <label>Дата предоплаты</label>
+                        <div class="field-content">
+                            <span class="field-value" id="prepayment-date-display">15.09.2023</span>
+                            <input type="date" class="field-input" id="prepayment-date-input" value="2023-09-15" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="detail-field">
+                        <label>Номер счета</label>
+                        <div class="field-content">
+                            <span class="field-value" id="invoice-number-display">№ 12345 от 10.09.2023</span>
+                            <input type="text" class="field-input" id="invoice-number-input" value="№ 12345 от 10.09.2023" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="detail-field">
+                        <label>Дата окончательной оплаты</label>
+                        <div class="field-content">
+                            <span class="field-value" id="final-payment-date-display">Не установлена</span>
+                            <input type="date" class="field-input" id="final-payment-date-input" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="detail-field">
+                        <label>Комментарий к оплате</label>
+                        <div class="field-content">
+                            <span class="field-value" id="payment-comment-display">Предоплата внесена в полном объеме</span>
+                            <textarea class="field-textarea" id="payment-comment-input" style="display: none;">Предоплата внесена в полном объеме</textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Кнопки действий -->
+                <div class="finance-actions" id="finance-section-actions" style="display: none;">
+                    <button class="btn btn-secondary" onclick="cancelEdit('finance-section')">Отмена</button>
+                    <button class="btn btn-primary" onclick="saveFinanceData()">Сохранить</button>
+                </div>
+            </div>
+            
+            <!-- История платежей -->
+            <div class="payments-history-section">
+                <div class="section-header">
+                    <h3>История платежей</h3>
+                    <button class="add-payment-btn" onclick="addNewPayment()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                        Добавить платеж
+            </button>
+                </div>
+                
+                <div class="payments-list" id="payments-list">
+                    <div class="payment-item">
+                        <div class="payment-info">
+                            <div class="payment-amount">15 000 ₽</div>
+                            <div class="payment-type">Предоплата</div>
+                        </div>
+                        <div class="payment-details">
+                            <div class="payment-date">15.09.2023</div>
+                            <div class="payment-method">Банковский перевод</div>
+                        </div>
+                        <div class="payment-actions">
+                            <button class="edit-payment-btn" onclick="editPayment(this)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </button>
+                            <button class="delete-payment-btn" onclick="deletePayment(this)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3,6 5,6 21,6"></polyline>
+                                    <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="materials-tab">
+            <!-- Блок материалов -->
+            <div class="materials-section">
+                <div class="section-header">
+                    <h3>Материалы</h3>
+                    <button class="add-material-btn" onclick="addNewMaterial()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Добавить материал
+                    </button>
+                </div>
+                
+                <!-- Таблица материалов -->
+                <div class="materials-table-container">
+                    <table class="materials-table">
+                        <thead>
+                            <tr>
+                                <th>Наименование</th>
+                                <th>Количество</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="materials-table-body">
+                            <tr>
+                                <td>Ткань мебельная "Велюр"</td>
+                                <td>15 м</td>
+                                <td>
+                                    <button class="edit-material-btn" onclick="editMaterial(this)">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="delete-material-btn" onclick="deleteMaterial(this)">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3,6 5,6 21,6"></polyline>
+                                            <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Наполнитель холлофайбер</td>
+                                <td>8 кг</td>
+                                <td>
+                                    <button class="edit-material-btn" onclick="editMaterial(this)">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="delete-material-btn" onclick="deleteMaterial(this)">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3,6 5,6 21,6"></polyline>
+                                            <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Дерево бук</td>
+                                <td>2.5 м³</td>
+                                <td>
+                                    <button class="edit-material-btn" onclick="editMaterial(this)">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="delete-material-btn" onclick="deleteMaterial(this)">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3,6 5,6 21,6"></polyline>
+                                            <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Фурнитура металлическая</td>
+                                <td>комплект</td>
+                                <td>
+                                    <button class="edit-material-btn" onclick="editMaterial(this)">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="delete-material-btn" onclick="deleteMaterial(this)">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3,6 5,6 21,6"></polyline>
+                                            <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="contacts-tab">
+            <!-- Информация о клиенте -->
+            <div class="contacts-section">
+                <div class="section-header">
+                    <h3>Информация о клиенте</h3>
+                    <button class="edit-btn" onclick="toggleEditMode('contacts-section')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="contacts-info">
+                    <div class="info-row">
+                        <span class="info-label">ФИО клиента</span>
+                        <div class="field-content">
+                            <span class="info-value" id="client-name-display">Алексей Чернов</span>
+                            <input type="text" class="field-input" id="client-name-input" value="Алексей Чернов" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Телефон</span>
+                        <div class="field-content">
+                            <span class="info-value" id="client-phone-display">+7 (912) 345-67-89</span>
+                            <input type="tel" class="field-input" id="client-phone-input" value="+7 (912) 345-67-89" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <div class="field-content">
+                            <span class="info-value" id="client-email-display">alexey.chernov@example.com</span>
+                            <input type="email" class="field-input" id="client-email-input" value="alexey.chernov@example.com" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Дополнительный контакт</span>
+                        <div class="field-content">
+                            <span class="info-value" id="client-additional-display">Мария (супруга): +7 (912) 555-44-33</span>
+                            <input type="text" class="field-input" id="client-additional-input" value="Мария (супруга): +7 (912) 555-44-33" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Предпочтительный способ связи</span>
+                        <div class="field-content">
+                            <span class="info-value" id="client-preferred-display">Telegram/WhatsApp</span>
+                            <select class="field-select" id="client-preferred-input" style="display: none;">
+                                <option value="phone">Телефон</option>
+                                <option value="email">Email</option>
+                                <option value="telegram">Telegram</option>
+                                <option value="whatsapp">WhatsApp</option>
+                                <option value="viber">Viber</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="description-actions" id="contacts-section-actions" style="display: none;">
+                        <button class="btn btn-secondary" onclick="cancelEdit('contacts-section')">Отмена</button>
+                        <button class="btn btn-primary" onclick="saveContactsData()">Сохранить</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Информация о доставке -->
+            <div class="delivery-section">
+                <div class="section-header">
+                    <h3>Информация о доставке</h3>
+                    <button class="edit-btn" onclick="toggleEditMode('delivery-section')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="delivery-info">
+                    <div class="info-row">
+                        <span class="info-label">Адрес доставки</span>
+                        <div class="field-content">
+                            <span class="info-value" id="delivery-address-display">г. Москва, ул. Ленина, д. 45, кв. 18</span>
+                            <textarea class="field-textarea" id="delivery-address-input" style="display: none;">г. Москва, ул. Ленина, д. 45, кв. 18</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Дата доставки</span>
+                        <div class="field-content">
+                            <span class="info-value" id="delivery-date-display">25.09.2023</span>
+                            <input type="date" class="field-input" id="delivery-date-input" value="2023-09-25" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Время доставки</span>
+                        <div class="field-content">
+                            <span class="info-value" id="delivery-time-display">14:00 - 18:00</span>
+                            <select class="field-select" id="delivery-time-input" style="display: none;">
+                                <option value="09:00-12:00">09:00 - 12:00</option>
+                                <option value="12:00-15:00">12:00 - 15:00</option>
+                                <option value="14:00-18:00" selected>14:00 - 18:00</option>
+                                <option value="18:00-21:00">18:00 - 21:00</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Способ доставки</span>
+                        <div class="field-content">
+                            <span class="info-value" id="delivery-method-display">Самовывоз</span>
+                            <select class="field-select" id="delivery-method-input" style="display: none;">
+                                <option value="pickup">Самовывоз</option>
+                                <option value="courier">Курьерская доставка</option>
+                                <option value="transport">Транспортная компания</option>
+                                <option value="post">Почта России</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Стоимость доставки</span>
+                        <div class="field-content">
+                            <span class="info-value" id="delivery-cost-display">0 ₽</span>
+                            <input type="number" class="field-input" id="delivery-cost-input" value="0" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Комментарий к доставке</span>
+                        <div class="field-content">
+                            <span class="info-value" id="delivery-comment-display">Доставка в разобранном виде, сборка на месте</span>
+                            <textarea class="field-textarea" id="delivery-comment-input" style="display: none;">Доставка в разобранном виде, сборка на месте</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="description-actions" id="delivery-section-actions" style="display: none;">
+                        <button class="btn btn-secondary" onclick="cancelEdit('delivery-section')">Отмена</button>
+                        <button class="btn btn-primary" onclick="saveDeliveryData()">Сохранить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Глобальная переменная для отслеживания активной карточки
+    let activeCardId = null;
+    
+    // Функция для вычисления суммы в колонке
+    function updateColumnSums() {
+        const columns = document.querySelectorAll('.kanban-column');
+        
+        columns.forEach(column => {
+            const cards = column.querySelectorAll('.kanban-card');
+            let total = 0;
+            
+            cards.forEach(card => {
+                const amount = parseInt(card.getAttribute('data-card-amount') || '0');
+                total += amount;
+            });
+            
+            const sumElement = column.querySelector('.column-sum');
+            if (sumElement) {
+                sumElement.textContent = total.toLocaleString('ru-RU') + ' ₽';
+            }
+        });
+    }
+    
+    // Функция для редактирования заголовка колонки
+    function startEditingColumnTitle(column) {
+        const titleElement = column.querySelector('.column-title span:first-child');
+        const currentTitle = titleElement.textContent;
+        const countSpan = column.querySelector('.column-count');
+        const sumSpan = column.querySelector('.column-sum');
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentTitle;
+        input.className = 'column-title-input';
+        
+        // Заменяем содержимое на input
+        titleElement.replaceWith(input);
+        
+        input.focus();
+        
+        // Обработка завершения редактирования
+        input.addEventListener('blur', function() {
+            finishEditingColumnTitle(input, countSpan, sumSpan);
+        });
+        
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                finishEditingColumnTitle(input, countSpan, sumSpan);
+            }
+        });
+    }
+    
+    function finishEditingColumnTitle(input, countSpan, sumSpan) {
+        const newTitle = input.value || 'Без названия';
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = newTitle;
+        
+        input.replaceWith(titleSpan);
+        
+        // Восстанавливаем счетчик и сумму
+        if (countSpan) {
+            titleSpan.after(countSpan);
+        }
+        if (sumSpan) {
+            countSpan.after(sumSpan);
+        }
+    }
+    
+    // Функция для показа/скрытия формы добавления карточки
+    function toggleAddCardForm(element) {
+        const column = element.closest('.kanban-column');
+        const form = column.querySelector('.add-card-form');
+        const isVisible = form.style.display === 'block';
+        
+        form.style.display = isVisible ? 'none' : 'block';
+    }
+    
+    function cancelAddCard(button) {
+        const form = button.closest('.add-card-form');
+        form.style.display = 'none';
+    }
+    
+    function addNewCard(button) {
+        const form = button.closest('.add-card-form');
+        const inputs = form.querySelectorAll('.form-input');
+        
+        // В реальном приложении здесь бы создавалась карточка с данными из формы
+        alert('Новая карточка будет добавлена с введенными данными');
+        
+        // Очищаем форму и скрываем ее
+        inputs.forEach(input => input.value = '');
+        form.style.display = 'none';
+        
+        // Обновляем суммы в колонках
+        updateColumnSums();
+    }
+    
+    // Функции для работы с детальной панелью
+    function openDetailPanel(card) {
+        const panel = document.getElementById('detail-panel');
+        const overlay = document.getElementById('overlay');
+        
+        // Сохраняем ID активной карточки
+        activeCardId = card.getAttribute('data-card-id');
+        
+        // Заполняем данные на панели (в реальном приложении данные будут приходить с сервера)
+        const clientName = card.querySelector('.client-name').textContent;
+        const clientAvatar = card.querySelector('.client-avatar').textContent;
+        const productName = card.querySelector('.card-title').textContent;
+        const amount = card.querySelector('.card-amount').textContent;
+        const prepayment = card.querySelector('.prepayment').textContent.replace('Предоплата: ', '');
+        const priority = card.querySelector('.card-priority').textContent;
+        
+        document.getElementById('detail-avatar').textContent = clientAvatar;
+        document.getElementById('detail-client-name').textContent = clientName;
+        document.getElementById('detail-product').textContent = productName;
+        document.getElementById('detail-amount').textContent = amount;
+        document.getElementById('detail-prepayment').textContent = prepayment;
+        document.getElementById('detail-priority').textContent = priority;
+        
+        // Показываем панель и overlay
+        panel.classList.add('active');
+        overlay.classList.add('active');
+        
+        // Инициализируем табы
+        initTabs();
+        
+        // Обновляем данные в табах
+        updateTabData(card);
+        
+        // Блокируем скролл на основном контенте
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeDetailPanel() {
+        const panel = document.getElementById('detail-panel');
+        const overlay = document.getElementById('overlay');
+        
+        panel.classList.remove('active');
+        overlay.classList.remove('active');
+        
+        // Разблокируем скролл на основном контенте
+        document.body.style.overflow = '';
+    }
+    
+    // Функция для удаления колонки
+    function deleteColumn(columnElement) {
+        const columnId = columnElement.getAttribute('data-column-id');
+        const columnTitle = columnElement.querySelector('.column-title span').textContent;
+        const cardCount = columnElement.querySelectorAll('.kanban-card').length;
+        
+        // Список системных колонок, которые нельзя удалять
+        const systemColumns = [
+            'КБ', 'Столярный цех', 'Формовка', 'Швейный цех', 
+            'Обивка', 'Сборка и упаковка', 'Отгружен'
+        ];
+        
+        // Проверяем, является ли колонка системной
+        if (systemColumns.includes(columnTitle)) {
+            alert(`Колонка "${columnTitle}" является системной и не может быть удалена.`);
+            return;
+        }
+        
+        // Проверяем, есть ли карточки в колонке
+        if (cardCount > 0) {
+            const confirmMessage = `В колонке "${columnTitle}" есть ${cardCount} карточек. При удалении колонки все карточки будут перемещены в первую колонку. Продолжить?`;
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Перемещаем все карточки в первую колонку
+            const firstColumn = document.querySelector('.kanban-column[data-column-id="1"]');
+            if (firstColumn) {
+                const firstColumnCards = firstColumn.querySelector('.kanban-cards');
+                const cardsToMove = columnElement.querySelectorAll('.kanban-card');
+                
+                cardsToMove.forEach(card => {
+                    firstColumnCards.appendChild(card);
+                });
+            }
+        }
+        
+        // Удаляем колонку
+        columnElement.remove();
+        
+        // Обновляем ID оставшихся колонок
+        updateColumnIds();
+        
+        // Обновляем суммы и счетчики
+        updateColumnSums();
+        updateColumnCounts();
+        
+        console.log(`Колонка "${columnTitle}" удалена`);
+    }
+    
+    // Функция для обновления ID колонок после удаления
+    function updateColumnIds() {
+        const columns = document.querySelectorAll('.kanban-column');
+        columns.forEach((column, index) => {
+            const newId = index + 1;
+            column.setAttribute('data-column-id', newId);
+            
+            // Обновляем ID в элементах суммы и счетчика
+            const sumElement = column.querySelector('.column-sum');
+            const countElement = column.querySelector('.column-count');
+            
+            if (sumElement) {
+                sumElement.id = `column-sum-${newId}`;
+            }
+            if (countElement) {
+                countElement.id = `column-count-${newId}`;
+            }
+        });
+    }
+
+    // Функция для создания новой колонки
+    function createNewColumn() {
+        const kanbanBoard = document.getElementById('kanban-board');
+        const columnCount = kanbanBoard.querySelectorAll('.kanban-column').length;
+        const newColumnId = columnCount + 1;
+        
+        const newColumn = document.createElement('div');
+        newColumn.className = 'kanban-column';
+        newColumn.setAttribute('data-column-id', newColumnId);
+        
+        newColumn.innerHTML = `
+            <div class="column-header">
+                <div class="column-title">
+                    <span>Новая колонка</span>
+                    <span class="column-sum">0 ₽</span>
+                    <span class="column-count">0</span>
+                </div>
+                <div class="column-actions">
+                    <div class="column-action" onclick="startEditingColumnTitle(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action" onclick="toggleAddCardForm(this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                    </div>
+                    <div class="column-action column-delete" onclick="deleteColumn(this.closest('.kanban-column'))">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="kanban-cards"></div>
+            <div class="add-card-form" style="display: none;">
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Название изделия">
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-input" placeholder="Сумма заказа">
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-input" placeholder="Предоплата">
+                </div>
+                <div class="form-group">
+                    <select class="form-input">
+                        <option value="high">Высокий приоритет</option>
+                        <option value="medium">Средний приоритет</option>
+                        <option value="low">Низкий приоритет</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Имя клиента">
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="cancelAddCard(this)">Отмена</button>
+                    <button class="btn btn-primary" onclick="addNewCard(this)">Добавить</button>
+                </div>
+            </div>
+        `;
+        
+        // Добавляем новую колонку в доску
+        kanbanBoard.appendChild(newColumn);
+        
+        // Инициализируем функционал перетаскивания для новой колонки
+        initColumnDragAndDrop(newColumn);
+        
+        // Закрываем панель после создания колонки
+        closeDetailPanel();
+    }
+    
+    // Функция для инициализации табов
+    function initTabs() {
+        // Удаляем старые обработчики
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.removeEventListener('click', handleTabClick);
+        });
+        
+        // Добавляем новые обработчики
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', handleTabClick);
+        });
+    }
+    
+    function handleTabClick() {
+        // Убираем активный класс у всех табов
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        // Добавляем активный класс текущему табу
+        this.classList.add('active');
+        
+        // Скрываем все содержимое табов
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        // Показываем содержимое выбранного таба
+        const tabId = this.getAttribute('data-tab');
+        const targetTab = document.getElementById(`${tabId}-tab`);
+        if (targetTab) {
+            targetTab.classList.add('active');
+        }
+    }
+    
+    // Функция для обновления данных в табах
+    function updateTabData(card) {
+        const clientName = card.querySelector('.client-name').textContent;
+        const amount = card.querySelector('.card-amount').textContent;
+        const prepayment = card.querySelector('.prepayment').textContent.replace('Предоплата: ', '');
+        const productName = card.querySelector('.card-title').textContent;
+        
+        // Обновляем данные в табе "Комментарии" (описание проекта)
+        updateProjectDescription(productName);
+        
+        // Обновляем данные в табе "Финансы"
+        updateFinanceData(amount, prepayment);
+        
+        // Обновляем данные в табе "Контакты"
+        updateContactsData(clientName);
+    }
+    
+    // Функция для обновления контактных данных
+    function updateContactsData(clientName) {
+        const nameDisplay = document.getElementById('client-name-display');
+        const nameInput = document.getElementById('client-name-input');
+        
+        if (nameDisplay && nameInput) {
+            nameDisplay.textContent = clientName;
+            nameInput.value = clientName;
+        }
+        
+        // Обновляем аватар в детальной панели
+        const avatarElement = document.getElementById('detail-avatar');
+        if (avatarElement) {
+            const initials = clientName.split(' ').map(word => word[0]).join('').toUpperCase();
+            avatarElement.textContent = initials;
+        }
+    }
+    
+    // Функция для обновления финансовых данных
+    function updateFinanceData(amount, prepayment) {
+        const totalAmountElement = document.getElementById('finance-total-amount');
+        const prepaymentElement = document.getElementById('finance-prepayment');
+        
+        if (totalAmountElement) totalAmountElement.textContent = amount;
+        if (prepaymentElement) prepaymentElement.textContent = prepayment;
+        
+        // Вычисляем остаток к оплате
+        const totalAmount = parseFloat(amount.replace(/[^\d]/g, ''));
+        const prepaymentAmount = parseFloat(prepayment.replace(/[^\d]/g, ''));
+        const remaining = totalAmount - prepaymentAmount;
+        const prepaymentPercent = Math.round((prepaymentAmount / totalAmount) * 100);
+        
+        const remainingElement = document.getElementById('finance-remaining');
+        const percentElement = document.getElementById('finance-prepayment-percent');
+        
+        if (remainingElement) remainingElement.textContent = remaining.toLocaleString('ru-RU') + ' ₽';
+        if (percentElement) percentElement.textContent = prepaymentPercent + '%';
+    }
+    
+    // Функция для обновления описания проекта
+    function updateProjectDescription(productName) {
+        const nameDisplay = document.getElementById('project-name-display');
+        const nameInput = document.getElementById('project-name-input');
+        
+        if (nameDisplay && nameInput) {
+            nameDisplay.textContent = productName;
+            nameInput.value = productName;
+        }
+    }
+    
+    // Функции для редактирования описания проекта
+    function toggleEditMode(section) {
+        const actions = document.getElementById(`${section}-actions`);
+        const displayElements = document.querySelectorAll(`#${section} .field-value`);
+        const inputElements = document.querySelectorAll(`#${section} .field-input, #${section} .field-textarea`);
+        
+        if (actions && displayElements.length > 0 && inputElements.length > 0) {
+            const isEditing = actions.style.display !== 'none';
+            
+            if (isEditing) {
+                // Выходим из режима редактирования
+                displayElements.forEach(el => el.style.display = 'block');
+                inputElements.forEach(el => el.style.display = 'none');
+                actions.style.display = 'none';
+            } else {
+                // Входим в режим редактирования
+                displayElements.forEach(el => el.style.display = 'none');
+                inputElements.forEach(el => el.style.display = 'block');
+                actions.style.display = 'flex';
+            }
+        }
+    }
+    
+    function cancelEdit(section) {
+        const actions = document.getElementById(`${section}-actions`);
+        const displayElements = document.querySelectorAll(`#${section} .field-value`);
+        const inputElements = document.querySelectorAll(`#${section} .field-input, #${section} .field-textarea`);
+        
+        if (actions && displayElements.length > 0 && inputElements.length > 0) {
+            // Восстанавливаем значения из display элементов
+            inputElements.forEach((input, index) => {
+                if (displayElements[index]) {
+                    input.value = displayElements[index].textContent;
+                }
+            });
+            
+            // Выходим из режима редактирования
+            displayElements.forEach(el => el.style.display = 'block');
+            inputElements.forEach(el => el.style.display = 'none');
+            actions.style.display = 'none';
+        }
+    }
+    
+    function saveProjectDescription() {
+        const nameDisplay = document.getElementById('project-name-display');
+        const nameInput = document.getElementById('project-name-input');
+        const descriptionDisplay = document.getElementById('project-description-display');
+        const descriptionInput = document.getElementById('project-description-input');
+        const requirementsDisplay = document.getElementById('project-requirements-display');
+        const requirementsInput = document.getElementById('project-requirements-input');
+        
+        // Сохраняем значения
+        if (nameDisplay && nameInput) {
+            nameDisplay.textContent = nameInput.value;
+        }
+        if (descriptionDisplay && descriptionInput) {
+            descriptionDisplay.textContent = descriptionInput.value;
+        }
+        if (requirementsDisplay && requirementsInput) {
+            requirementsDisplay.textContent = requirementsInput.value;
+        }
+        
+        // Выходим из режима редактирования
+        toggleEditMode('project-description');
+        
+        // Обновляем данные в карточке
+        updateCardProjectData();
+        
+        // Здесь можно добавить сохранение на сервер
+        console.log('Описание проекта сохранено:', {
+            name: nameInput.value,
+            description: descriptionInput.value,
+            requirements: requirementsInput.value
+        });
+    }
+    
+    // Функция для обновления данных проекта в карточке
+    function updateCardProjectData() {
+        if (activeCardId) {
+            const activeCard = document.querySelector(`[data-card-id="${activeCardId}"]`);
+            if (activeCard) {
+                // Обновляем название проекта в карточке
+                const titleElement = activeCard.querySelector('.card-title');
+                const projectNameDisplay = document.getElementById('project-name-display');
+                
+                if (titleElement && projectNameDisplay) {
+                    titleElement.textContent = projectNameDisplay.textContent;
+                }
+                
+                // Обновляем данные в детальной панели
+                const detailProduct = document.getElementById('detail-product');
+                if (detailProduct && projectNameDisplay) {
+                    detailProduct.textContent = projectNameDisplay.textContent;
+                }
+            }
+        }
+    }
+    
+    // Функции для работы с файлами
+    function addNewFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.accept = '.pdf,.doc,.docx,.xlsx,.jpg,.png,.dwg';
+        
+        input.onchange = function(e) {
+            Array.from(e.target.files).forEach(file => {
+                addFileToList(file);
+            });
+        };
+        
+        input.click();
+    }
+    
+    function addFileToList(file) {
+        const filesList = document.getElementById('files-list');
+        if (!filesList) return;
+        
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-download';
+        
+        const fileSize = (file.size / 1024 / 1024).toFixed(1) + ' МБ';
+        
+        fileItem.innerHTML = `
+            <div class="file-info">
+                <div class="file-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                </div>
+                <div>
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-size">${fileSize}</div>
+                </div>
+            </div>
+            <div class="file-actions">
+                <button class="download-btn">Скачать</button>
+                <button class="delete-btn" onclick="deleteFile(this)">×</button>
+            </div>
+        `;
+        
+        filesList.appendChild(fileItem);
+    }
+    
+    function deleteFile(button) {
+        const fileItem = button.closest('.file-download');
+        if (fileItem) {
+            fileItem.remove();
+        }
+    }
+    
+    // Функции для работы с комментариями
+    function addNewComment() {
+        const commentText = prompt('Введите комментарий:');
+        if (commentText && commentText.trim()) {
+            addCommentToList(commentText, 'Текущий пользователь');
+        }
+    }
+    
+    function addCommentToList(text, author) {
+        const commentsList = document.getElementById('comments-list');
+        if (!commentsList) return;
+        
+        const commentItem = document.createElement('div');
+        commentItem.className = 'comment';
+        
+        const now = new Date();
+        const timeString = now.toLocaleDateString('ru-RU') + ' ' + now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+        
+        commentItem.innerHTML = `
+            <div class="comment-header">
+                <span class="comment-author">${author}</span>
+                <span class="comment-time">${timeString}</span>
+            </div>
+            <div class="comment-text">${text}</div>
+        `;
+        
+        commentsList.appendChild(commentItem);
+    }
+    
+    // Функции для работы с материалами
+    function addNewMaterial() {
+        const name = prompt('Введите наименование материала:');
+        if (name && name.trim()) {
+            const quantity = prompt('Введите количество:');
+            if (quantity && quantity.trim()) {
+                addMaterialToList(name.trim(), quantity.trim());
+            }
+        }
+    }
+    
+    function addMaterialToList(name, quantity) {
+        const tableBody = document.getElementById('materials-table-body');
+        if (!tableBody) return;
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${name}</td>
+            <td>${quantity}</td>
+            <td class="actions-cell">
+                <button class="edit-material-btn" onclick="editMaterial(this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+                <button class="delete-material-btn" onclick="deleteMaterial(this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3,6 5,6 21,6"></polyline>
+                        <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </button>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    }
+    
+    function editMaterial(button) {
+        const row = button.closest('tr');
+        const nameCell = row.cells[0];
+        const quantityCell = row.cells[1];
+        
+        const currentName = nameCell.textContent;
+        const currentQuantity = quantityCell.textContent;
+        
+        const newName = prompt('Наименование материала:', currentName);
+        if (newName !== null) {
+            const newQuantity = prompt('Количество:', currentQuantity);
+            if (newQuantity !== null) {
+                nameCell.textContent = newName;
+                quantityCell.textContent = newQuantity;
+            }
+        }
+    }
+    
+    function deleteMaterial(button) {
+        if (confirm('Удалить этот материал?')) {
+            const row = button.closest('tr');
+            row.remove();
+        }
+    }
+    
+    // Функции для работы с финансовыми данными
+    function saveFinanceData() {
+        const paymentMethodDisplay = document.getElementById('payment-method-display');
+        const paymentMethodInput = document.getElementById('payment-method-input');
+        const prepaymentDateDisplay = document.getElementById('prepayment-date-display');
+        const prepaymentDateInput = document.getElementById('prepayment-date-input');
+        const invoiceNumberDisplay = document.getElementById('invoice-number-display');
+        const invoiceNumberInput = document.getElementById('invoice-number-input');
+        const finalPaymentDateDisplay = document.getElementById('final-payment-date-display');
+        const finalPaymentDateInput = document.getElementById('final-payment-date-input');
+        const paymentCommentDisplay = document.getElementById('payment-comment-display');
+        const paymentCommentInput = document.getElementById('payment-comment-input');
+        
+        // Сохраняем значения
+        if (paymentMethodDisplay && paymentMethodInput) {
+            const selectedOption = paymentMethodInput.options[paymentMethodInput.selectedIndex];
+            paymentMethodDisplay.textContent = selectedOption.text;
+        }
+        if (prepaymentDateDisplay && prepaymentDateInput) {
+            const date = new Date(prepaymentDateInput.value);
+            prepaymentDateDisplay.textContent = date.toLocaleDateString('ru-RU');
+        }
+        if (invoiceNumberDisplay && invoiceNumberInput) {
+            invoiceNumberDisplay.textContent = invoiceNumberInput.value;
+        }
+        if (finalPaymentDateDisplay && finalPaymentDateInput) {
+            if (finalPaymentDateInput.value) {
+                const date = new Date(finalPaymentDateInput.value);
+                finalPaymentDateDisplay.textContent = date.toLocaleDateString('ru-RU');
+            } else {
+                finalPaymentDateDisplay.textContent = 'Не установлена';
+            }
+        }
+        if (paymentCommentDisplay && paymentCommentInput) {
+            paymentCommentDisplay.textContent = paymentCommentInput.value;
+        }
+        
+        // Выходим из режима редактирования
+        toggleEditMode('finance-section');
+        
+        // Обновляем данные в карточке
+        updateCardFinanceData();
+        
+        console.log('Финансовые данные сохранены');
+    }
+    
+    // Функция для обновления статуса веток в карточке
+    function updateCardBranches(cardElement, branches) {
+        const branchesContainer = cardElement.querySelector('.card-branches');
+        if (!branchesContainer) return;
+        
+        const frameStatus = branchesContainer.querySelector('.branch-item:first-child .branch-status');
+        const upholsteryStatus = branchesContainer.querySelector('.branch-item:last-child .branch-status');
+        
+        if (frameStatus) {
+            frameStatus.className = 'branch-status';
+            switch (branches.frame) {
+                case 'not_started':
+                    frameStatus.classList.add('status-not-started');
+                    frameStatus.textContent = 'Не начат';
+                    break;
+                case 'in_progress':
+                    frameStatus.classList.add('status-in-progress');
+                    frameStatus.textContent = 'В работе';
+                    break;
+                case 'completed':
+                    frameStatus.classList.add('status-completed');
+                    frameStatus.textContent = 'Готов';
+                    break;
+            }
+        }
+        
+        if (upholsteryStatus) {
+            upholsteryStatus.className = 'branch-status';
+            switch (branches.upholstery) {
+                case 'not_started':
+                    upholsteryStatus.classList.add('status-not-started');
+                    upholsteryStatus.textContent = 'Не начат';
+                    break;
+                case 'in_progress':
+                    upholsteryStatus.classList.add('status-in-progress');
+                    upholsteryStatus.textContent = 'В работе';
+                    break;
+                case 'completed':
+                    upholsteryStatus.classList.add('status-completed');
+                    upholsteryStatus.textContent = 'Готов';
+                    break;
+            }
+        }
+    }
+
+    // Функция для обновления финансовых данных в карточке
+    function updateCardFinanceData() {
+        if (activeCardId) {
+            const activeCard = document.querySelector(`[data-card-id="${activeCardId}"]`);
+            if (activeCard) {
+                // Обновляем сумму в карточке
+                const amountElement = activeCard.querySelector('.card-amount');
+                const prepaymentElement = activeCard.querySelector('.prepayment');
+                
+                if (amountElement) {
+                    const totalAmount = document.getElementById('finance-total-amount');
+                    if (totalAmount) {
+                        amountElement.textContent = totalAmount.textContent;
+                        // Обновляем data-атрибут для правильного подсчета сумм колонок
+                        const amountValue = totalAmount.textContent.replace(/[^\d]/g, '');
+                        activeCard.setAttribute('data-card-amount', amountValue);
+                    }
+                }
+                
+                if (prepaymentElement) {
+                    const prepaymentAmount = document.getElementById('finance-prepayment');
+                    if (prepaymentAmount) {
+                        prepaymentElement.textContent = 'Предоплата: ' + prepaymentAmount.textContent;
+                    }
+                }
+                
+                // Обновляем данные в детальной панели
+                const detailAmount = document.getElementById('detail-amount');
+                const detailPrepayment = document.getElementById('detail-prepayment');
+                
+                if (detailAmount && amountElement) {
+                    detailAmount.textContent = amountElement.textContent;
+                }
+                if (detailPrepayment && prepaymentElement) {
+                    detailPrepayment.textContent = prepaymentElement.textContent.replace('Предоплата: ', '');
+                }
+                
+                // Пересчитываем суммы колонок
+                updateColumnSums();
+            }
+        }
+    }
+    
+    // Функции для работы с контактными данными
+    function saveContactsData() {
+        const nameDisplay = document.getElementById('client-name-display');
+        const nameInput = document.getElementById('client-name-input');
+        const phoneDisplay = document.getElementById('client-phone-display');
+        const phoneInput = document.getElementById('client-phone-input');
+        const emailDisplay = document.getElementById('client-email-display');
+        const emailInput = document.getElementById('client-email-input');
+        const additionalDisplay = document.getElementById('client-additional-display');
+        const additionalInput = document.getElementById('client-additional-input');
+        const preferredDisplay = document.getElementById('client-preferred-display');
+        const preferredInput = document.getElementById('client-preferred-input');
+        
+        // Сохраняем значения
+        if (nameDisplay && nameInput) {
+            nameDisplay.textContent = nameInput.value;
+        }
+        if (phoneDisplay && phoneInput) {
+            phoneDisplay.textContent = phoneInput.value;
+        }
+        if (emailDisplay && emailInput) {
+            emailDisplay.textContent = emailInput.value;
+        }
+        if (additionalDisplay && additionalInput) {
+            additionalDisplay.textContent = additionalInput.value;
+        }
+        if (preferredDisplay && preferredInput) {
+            const selectedOption = preferredInput.options[preferredInput.selectedIndex];
+            preferredDisplay.textContent = selectedOption.text;
+        }
+        
+        // Выходим из режима редактирования
+        toggleEditMode('contacts-section');
+        
+        // Обновляем данные в основной карточке
+        updateCardClientData(nameInput.value);
+        
+        console.log('Контактные данные сохранены');
+    }
+    
+    // Функции для работы с данными доставки
+    function saveDeliveryData() {
+        const addressDisplay = document.getElementById('delivery-address-display');
+        const addressInput = document.getElementById('delivery-address-input');
+        const dateDisplay = document.getElementById('delivery-date-display');
+        const dateInput = document.getElementById('delivery-date-input');
+        const timeDisplay = document.getElementById('delivery-time-display');
+        const timeInput = document.getElementById('delivery-time-input');
+        const methodDisplay = document.getElementById('delivery-method-display');
+        const methodInput = document.getElementById('delivery-method-input');
+        const costDisplay = document.getElementById('delivery-cost-display');
+        const costInput = document.getElementById('delivery-cost-input');
+        const commentDisplay = document.getElementById('delivery-comment-display');
+        const commentInput = document.getElementById('delivery-comment-input');
+        
+        // Сохраняем значения
+        if (addressDisplay && addressInput) {
+            addressDisplay.textContent = addressInput.value;
+        }
+        if (dateDisplay && dateInput) {
+            const date = new Date(dateInput.value);
+            dateDisplay.textContent = date.toLocaleDateString('ru-RU');
+        }
+        if (timeDisplay && timeInput) {
+            const selectedOption = timeInput.options[timeInput.selectedIndex];
+            timeDisplay.textContent = selectedOption.text;
+        }
+        if (methodDisplay && methodInput) {
+            const selectedOption = methodInput.options[methodInput.selectedIndex];
+            methodDisplay.textContent = selectedOption.text;
+        }
+        if (costDisplay && costInput) {
+            costDisplay.textContent = costInput.value + ' ₽';
+        }
+        if (commentDisplay && commentInput) {
+            commentDisplay.textContent = commentInput.value;
+        }
+        
+        // Выходим из режима редактирования
+        toggleEditMode('delivery-section');
+        
+        console.log('Данные доставки сохранены');
+    }
+    
+    // Функция для обновления данных клиента в карточке
+    function updateCardClientData(clientName) {
+        // Находим активную карточку по сохраненному ID
+        if (activeCardId) {
+            const activeCard = document.querySelector(`[data-card-id="${activeCardId}"]`);
+            if (activeCard) {
+                const clientNameElement = activeCard.querySelector('.client-name');
+                if (clientNameElement) {
+                    clientNameElement.textContent = clientName;
+                }
+                
+                // Обновляем аватар (первые буквы имени)
+                const avatarElement = activeCard.querySelector('.client-avatar');
+                if (avatarElement) {
+                    const initials = clientName.split(' ').map(word => word[0]).join('').toUpperCase();
+                    avatarElement.textContent = initials;
+                }
+                
+                // Обновляем данные в детальной панели
+                const detailClientName = document.getElementById('detail-client-name');
+                const detailAvatar = document.getElementById('detail-avatar');
+                
+                if (detailClientName) {
+                    detailClientName.textContent = clientName;
+                }
+                if (detailAvatar) {
+                    detailAvatar.textContent = initials;
+                }
+            }
+        }
+    }
+    
+    // Функции для работы с платежами
+    function addNewPayment() {
+        const amount = prompt('Введите сумму платежа:');
+        if (amount && amount.trim()) {
+            const type = prompt('Тип платежа (Предоплата, Окончательный платеж, Дополнительный):', 'Предоплата');
+            if (type && type.trim()) {
+                const method = prompt('Способ оплаты:', 'Банковский перевод');
+                if (method && method.trim()) {
+                    addPaymentToList(amount.trim(), type.trim(), method.trim());
+                }
+            }
+        }
+    }
+    
+    function addPaymentToList(amount, type, method) {
+        const paymentsList = document.getElementById('payments-list');
+        if (!paymentsList) return;
+        
+        const paymentItem = document.createElement('div');
+        paymentItem.className = 'payment-item';
+        
+        const now = new Date();
+        const dateString = now.toLocaleDateString('ru-RU');
+        
+        paymentItem.innerHTML = `
+            <div class="payment-info">
+                <div class="payment-amount">${amount} ₽</div>
+                <div class="payment-type">${type}</div>
+            </div>
+            <div class="payment-details">
+                <div class="payment-date">${dateString}</div>
+                <div class="payment-method">${method}</div>
+            </div>
+            <div class="payment-actions">
+                <button class="edit-payment-btn" onclick="editPayment(this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+                <button class="delete-payment-btn" onclick="deletePayment(this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3,6 5,6 21,6"></polyline>
+                        <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </button>
+            </div>
+        `;
+        
+        paymentsList.appendChild(paymentItem);
+    }
+    
+    function editPayment(button) {
+        const paymentItem = button.closest('.payment-item');
+        const amountElement = paymentItem.querySelector('.payment-amount');
+        const typeElement = paymentItem.querySelector('.payment-type');
+        const methodElement = paymentItem.querySelector('.payment-method');
+        
+        const currentAmount = amountElement.textContent.replace(' ₽', '');
+        const currentType = typeElement.textContent;
+        const currentMethod = methodElement.textContent;
+        
+        const newAmount = prompt('Сумма платежа:', currentAmount);
+        if (newAmount !== null) {
+            const newType = prompt('Тип платежа:', currentType);
+            if (newType !== null) {
+                const newMethod = prompt('Способ оплаты:', currentMethod);
+                if (newMethod !== null) {
+                    amountElement.textContent = newAmount + ' ₽';
+                    typeElement.textContent = newType;
+                    methodElement.textContent = newMethod;
+                }
+            }
+        }
+    }
+    
+    function deletePayment(button) {
+        if (confirm('Удалить этот платеж?')) {
+            const paymentItem = button.closest('.payment-item');
+            paymentItem.remove();
+        }
+    }
+    
+    // Функции для перетаскивания карточек
+    function initColumnDragAndDrop(column) {
+        // Удаляем старые обработчики, если они есть
+        column.removeEventListener('dragover', handleDragOver);
+        column.removeEventListener('dragleave', handleDragLeave);
+        column.removeEventListener('drop', handleDrop);
+        
+        // Добавляем новые обработчики
+        column.addEventListener('dragover', handleDragOver);
+        column.addEventListener('dragleave', handleDragLeave);
+        column.addEventListener('drop', handleDrop);
+    }
+    
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        this.classList.add('drop-area');
+    }
+    
+    function handleDragLeave(e) {
+        // Проверяем, что мы действительно покинули колонку, а не перешли к дочернему элементу
+        if (!this.contains(e.relatedTarget)) {
+            this.classList.remove('drop-area');
+        }
+    }
+    
+    function handleDrop(e) {
+        e.preventDefault();
+        this.classList.remove('drop-area');
+        
+        const cardId = e.dataTransfer.getData('text/plain');
+        const draggedCard = document.querySelector(`[data-card-id="${cardId}"]`);
+        
+        if (draggedCard) {
+            const cardsContainer = this.querySelector('.kanban-cards');
+            if (cardsContainer) {
+                cardsContainer.appendChild(draggedCard);
+                
+                // Обновляем счетчики карточек и суммы
+                updateColumnCounts();
+                updateColumnSums();
+            }
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        let draggedCard = null;
+        
+        // Функция для инициализации drag & drop
+        function initDragAndDrop() {
+            const cards = document.querySelectorAll('.kanban-card');
+            const columns = document.querySelectorAll('.kanban-column');
+            
+            // Добавляем обработчики для карточек
+            cards.forEach(card => {
+                card.addEventListener('dragstart', function(e) {
+                    draggedCard = this;
+                    this.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', this.dataset.cardId);
+                });
+                
+                card.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                    columns.forEach(col => col.classList.remove('drop-area'));
+                    draggedCard = null;
+                });
+            });
+            
+            // Добавляем обработчики для колонок
+            columns.forEach(column => {
+                initColumnDragAndDrop(column);
+            });
+        }
+        
+        // Инициализируем drag & drop
+        initDragAndDrop();
+        
+        // Инициализируем табы
+        initTabs();
+        
+        // Инициализируем суммы колонок
+        updateColumnSums();
+        updateColumnCounts();
+        
+        // Переинициализируем drag & drop при добавлении новых карточек
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    // Проверяем, добавились ли новые карточки
+                    const newCards = Array.from(mutation.addedNodes).filter(node => 
+                        node.nodeType === 1 && node.classList && node.classList.contains('kanban-card')
+                    );
+                    if (newCards.length > 0) {
+                        initDragAndDrop();
+                    }
+                }
+            });
+        });
+        
+        // Наблюдаем за изменениями в канбан-доске
+        const kanbanBoard = document.getElementById('kanban-board');
+        if (kanbanBoard) {
+            observer.observe(kanbanBoard, { childList: true, subtree: true });
+        }
+        
+        // Обработчик клавиши Escape для закрытия панели
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDetailPanel();
+            }
+        });
+    });
+    
+    // Функция для обновления счетчиков карточек в колонках
+    function updateColumnCounts() {
+        const columns = document.querySelectorAll('.kanban-column');
+        
+        columns.forEach(column => {
+            const cardsCount = column.querySelectorAll('.kanban-card').length;
+            const countElement = column.querySelector('.column-count');
+            
+            if (countElement) {
+                countElement.textContent = cardsCount;
+            }
+        });
+    }
+    
+    // Переключение темы
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.addEventListener('click', function() {
+        document.body.classList.toggle('dark-theme');
+        
+        // Меняем текст кнопки
+        const themeText = themeToggle.querySelector('span');
+        if (document.body.classList.contains('dark-theme')) {
+            themeText.textContent = 'Светлая тема';
+        } else {
+            themeText.textContent = 'Темная тема';
+        }
+        
+        // Сохраняем настройку темы в localStorage
+        localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+    });
+    
+    // Функция для загрузки данных канбана с сервера
+    async function loadKanbanData() {
+        try {
+            // Получаем токен из localStorage или используем тестовый
+            const token = localStorage.getItem('token') || 'test-token';
+            
+            const response = await fetch('/api/orders/kanban', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Ошибка загрузки данных канбана');
+            }
+            
+            const data = await response.json();
+            console.log('Данные канбана загружены:', data);
+            
+            // Очищаем существующие карточки
+            document.querySelectorAll('.kanban-cards').forEach(container => {
+                container.innerHTML = '';
+            });
+            
+            // Заполняем колонки данными
+            data.columns.forEach(column => {
+                const columnElement = document.querySelector(`[data-column-id="${column.id}"]`);
+                if (columnElement) {
+                    const cardsContainer = columnElement.querySelector('.kanban-cards');
+                    if (cardsContainer) {
+                        column.cards.forEach(card => {
+                            const cardElement = createCardElement(card);
+                            cardsContainer.appendChild(cardElement);
+                        });
+                    }
+                }
+            });
+            
+            // Обновляем суммы колонок
+            updateColumnSums();
+            updateColumnCounts();
+            
+        } catch (error) {
+            console.error('Ошибка загрузки данных канбана:', error);
+            
+            // Загружаем тестовые данные если сервер не отвечает
+            console.log('Загружаем тестовые данные...');
+            loadTestData();
+        }
+    }
+    
+    // Функция для загрузки тестовых данных
+    function loadTestData() {
+        const testData = {
+            columns: [
+                { id: 1, title: "КБ", color: "#d1fae5", cards: [] },
+                { id: 2, title: "Столярный цех", color: "#fef3c7", cards: [] },
+                { id: 3, title: "Формовка", color: "#e0e7ff", cards: [] },
+                { id: 4, title: "Швейный цех", color: "#f3e8ff", cards: [] },
+                { id: 5, title: "Обивка", color: "#fde68a", cards: [] },
+                { id: 6, title: "Сборка и упаковка", color: "#fce7f3", cards: [] },
+                { id: 7, title: "Отгружен", color: "#e0f7f7", cards: [] }
+            ]
+        };
+        
+        // Добавляем тестовые карточки
+        const testCards = [
+            {
+                id: 1,
+                order_number: "ORD-001",
+                client: "Алексей Чернов",
+                phone: "+7 (999) 123-45-67",
+                email: "alexey@example.com",
+                price: 42500,
+                prepayment: 15000,
+                product_name: "Диван 'Неаполь' с механизмом аккордеон",
+                deadline: "2023-10-15",
+                priority: "high",
+                notes: "Срочный заказ",
+                status: 1,
+                color: "#ffffff",
+                created_at: "2023-09-10T10:00:00Z",
+                stage_started_at: "2023-09-10T10:00:00Z",
+                branches: { frame: 'not_started', upholstery: 'not_started' },
+                ready_for_assembly: false
+            },
+            {
+                id: 2,
+                order_number: "ORD-002", 
+                client: "Мария Петрова",
+                phone: "+7 (999) 234-56-78",
+                email: "maria@example.com",
+                price: 28700,
+                prepayment: 10000,
+                product_name: "Кресло 'Мелисса' с подголовником",
+                deadline: "2023-10-20",
+                priority: "medium",
+                notes: "Обычный заказ",
+                status: 2,
+                color: "#ffffff",
+                created_at: "2023-09-12T14:30:00Z",
+                stage_started_at: "2023-09-12T14:30:00Z",
+                branches: { frame: 'in_progress', upholstery: 'not_started' },
+                ready_for_assembly: false
+            },
+            {
+                id: 3,
+                order_number: "ORD-003",
+                client: "Елена Львова", 
+                phone: "+7 (999) 345-67-89",
+                email: "elena@example.com",
+                price: 38900,
+                prepayment: 15000,
+                product_name: "Спальный гарнитур 'Афина' с зеркалом",
+                deadline: "2023-10-25",
+                priority: "low",
+                notes: "Заказ готов к отгрузке",
+                status: 7,
+                color: "#ffffff",
+                created_at: "2023-09-01T09:15:00Z",
+                stage_started_at: "2023-09-01T09:15:00Z",
+                branches: { frame: 'completed', upholstery: 'completed' },
+                ready_for_assembly: true
+            }
+        ];
+        
+        // Распределяем карточки по колонкам
+        testCards.forEach(card => {
+            const column = testData.columns.find(col => col.id === card.status);
+            if (column) {
+                column.cards.push(card);
+            }
+        });
+        
+        // Очищаем существующие карточки
+        document.querySelectorAll('.kanban-cards').forEach(container => {
+            container.innerHTML = '';
+        });
+        
+        // Заполняем колонки данными
+        testData.columns.forEach(column => {
+            const columnElement = document.querySelector(`[data-column-id="${column.id}"]`);
+            if (columnElement) {
+                const cardsContainer = columnElement.querySelector('.kanban-cards');
+                if (cardsContainer) {
+                    column.cards.forEach(card => {
+                        const cardElement = createCardElement(card);
+                        cardsContainer.appendChild(cardElement);
+                    });
+                }
+            }
+        });
+        
+        // Обновляем суммы колонок
+        updateColumnSums();
+        updateColumnCounts();
+        
+        console.log('Тестовые данные загружены');
+    }
+    
+    // Функция для создания элемента карточки
+    function createCardElement(card) {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'kanban-card';
+        cardElement.draggable = true;
+        cardElement.setAttribute('data-card-id', card.id);
+        cardElement.setAttribute('data-card-amount', card.price);
+        cardElement.onclick = () => openDetailPanel(cardElement);
+        
+        // Определяем статус веток
+        const branches = card.branches || { frame: 'not_started', upholstery: 'not_started' };
+        
+        cardElement.innerHTML = `
+            <div class="card-header">
+                <div class="card-amount">${card.price.toLocaleString('ru-RU')} ₽</div>
+                <div class="card-priority priority-${card.priority || 'medium'}">${getPriorityText(card.priority)}</div>
+            </div>
+            <h3 class="card-title">${card.product_name || 'Без названия'}</h3>
+            <div class="card-dates">
+                <span>Создан: ${new Date(card.created_at).toLocaleDateString('ru-RU')}</span>
+                <span class="prepayment">Предоплата: ${(card.prepayment || 0).toLocaleString('ru-RU')} ₽</span>
+            </div>
+            
+            <!-- Ветки производства -->
+            <div class="card-branches">
+                <div class="branch-item">
+                    <div class="branch-icon branch-frame">🔨</div>
+                    <span class="branch-label">Каркас:</span>
+                    <span class="branch-status status-${branches.frame === 'not_started' ? 'not-started' : branches.frame === 'in_progress' ? 'in-progress' : 'completed'}">${getBranchStatusText(branches.frame)}</span>
+                </div>
+                <div class="branch-item">
+                    <div class="branch-icon branch-upholstery">🧵</div>
+                    <span class="branch-label">Обивка:</span>
+                    <span class="branch-status status-${branches.upholstery === 'not_started' ? 'not-started' : branches.upholstery === 'in_progress' ? 'in-progress' : 'completed'}">${getBranchStatusText(branches.upholstery)}</span>
+                </div>
+            </div>
+            
+            <div class="card-footer">
+                <div class="client-avatar">${getClientInitials(card.client)}</div>
+                <div class="client-name">${card.client || 'Не указан'}</div>
+            </div>
+        `;
+        
+        return cardElement;
+    }
+    
+    // Вспомогательные функции
+    function getPriorityText(priority) {
+        switch (priority) {
+            case 'high': return 'Высокий';
+            case 'medium': return 'Средний';
+            case 'low': return 'Низкий';
+            default: return 'Средний';
+        }
+    }
+    
+    function getBranchStatusText(status) {
+        switch (status) {
+            case 'not_started': return 'Не начат';
+            case 'in_progress': return 'В работе';
+            case 'completed': return 'Готов';
+            default: return 'Не начат';
+        }
+    }
+    
+    function getClientInitials(name) {
+        if (!name) return 'НК';
+        return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
+    }
+
+    // Проверяем сохраненную тему при загрузке
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedTheme = localStorage.getItem('theme');
+        const themeText = themeToggle.querySelector('span');
+        
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-theme');
+            themeText.textContent = 'Светлая тема';
+        } else {
+            themeText.textContent = 'Темная тема';
+        }
+        
+        // Загружаем данные канбана
+        loadKanbanData();
+    });
+    </script>
+</body>
+</html>

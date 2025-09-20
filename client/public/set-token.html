@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Установка токена</title>
+</head>
+<body>
+    <h1>Установка токена для CRM</h1>
+    <button onclick="setToken()">Установить токен</button>
+    <div id="status"></div>
+
+    <script>
+        async function setToken() {
+            try {
+                // Логинимся и получаем токен
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@sofany.com',
+                        password: 'admin123'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.token) {
+                    // Сохраняем токен в localStorage
+                    localStorage.setItem('token', data.token);
+                    document.getElementById('status').innerHTML = `
+                        <p style="color: green;">✅ Токен установлен!</p>
+                        <p>Пользователь: ${data.user.name}</p>
+                        <p>Email: ${data.user.email}</p>
+                        <p>Роль: ${data.user.role}</p>
+                        <p><a href="http://localhost:3000" target="_blank">Перейти в CRM</a></p>
+                    `;
+                } else {
+                    document.getElementById('status').innerHTML = '<p style="color: red;">❌ Ошибка получения токена</p>';
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML = `<p style="color: red;">❌ Ошибка: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

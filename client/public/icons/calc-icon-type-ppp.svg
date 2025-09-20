@@ -1,0 +1,9 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 3h18v18H3z"/>
+  <path d="M3 9h18"/>
+  <path d="M9 3v18"/>
+  <path d="M9 9h12"/>
+  <path d="M9 9v12"/>
+  <path d="M15 9h6"/>
+  <path d="M15 9v12"/>
+</svg>

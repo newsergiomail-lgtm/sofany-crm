@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Калькулятор Sofany.pro - Интеграция с CRM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0ea5a5;
+      --primary-dark: #0b8f8f;
+      --primary-light: #e0f7f7;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+
+    .header { text-align: center; margin-bottom: 3rem; }
+    .logo { font-size: 2.5rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem; }
+    .subtitle { color: var(--text-muted); font-size: 1.1rem; }
+
+    .card { background: var(--card-bg); border-radius: 1rem; padding: 2rem; box-shadow: var(--shadow); margin-bottom: 2rem; }
+    .card-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; color: var(--text); }
+
+    .form-group { margin-bottom: 1.5rem; }
+    .form-label { display: block; font-weight: 500; margin-bottom: 0.5rem; color: var(--text); }
+    .form-input { width: 100%; padding: 0.875rem; border: 1px solid var(--border); border-radius: 0.5rem; font-size: 1rem; }
+    .form-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+
+    .btn { padding: 0.875rem 1.5rem; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { background: #059669; }
+
+    .grid { display: grid; gap: 1.5rem; }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+    .status { padding: 1rem; border-radius: 0.5rem; margin-top: 1rem; }
+    .status-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .status-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+    .result { background: var(--bg); padding: 1rem; border-radius: 0.5rem; margin-top: 1rem; }
+    .result pre { font-family: 'Courier New', monospace; font-size: 0.875rem; overflow-x: auto; }
+
+    @media (max-width: 768px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .container { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">Sofany.pro</div>
+      <div class="subtitle">Калькулятор мебели с интеграцией в CRM</div>
+    </div>
+
+    <div class="grid grid-2">
+      <!-- Конфигурация изделия -->
+      <div class="card">
+        <h2 class="card-title">Конфигурация изделия</h2>
+        
+        <div class="form-group">
+          <label class="form-label">Тип изделия</label>
+          <select id="product-type" class="form-input">
+            <option value="sofa">Диван</option>
+            <option value="bed">Кровать</option>
+            <option value="chair">Кресло</option>
+          </select>
+        </div>
+
+        <div class="grid grid-3">
+          <div class="form-group">
+            <label class="form-label">Ширина (мм)</label>
+            <input type="number" id="width" class="form-input" value="2000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Глубина (мм)</label>
+            <input type="number" id="depth" class="form-input" value="900">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Высота (мм)</label>
+            <input type="number" id="height" class="form-input" value="800">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Материал каркаса</label>
+          <select id="frame-type" class="form-input">
+            <option value="сосна">Сосна</option>
+            <option value="береза">Береза</option>
+            <option value="дуб">Дуб</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Ткань</label>
+          <select id="fabric-type" class="form-input">
+            <option value="велюр">Велюр</option>
+            <option value="жаккард">Жаккард</option>
+            <option value="кожа">Кожа</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Механизм</label>
+          <select id="mechanism" class="form-input">
+            <option value="eurobook">Еврокнижка</option>
+            <option value="click-clack">Клик-кляк</option>
+            <option value="dolphin">Дельфин</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Материалы и расчеты -->
+      <div class="card">
+        <h2 class="card-title">Расход материалов</h2>
+        
+        <div class="form-group">
+          <label class="form-label">Ткань (м)</label>
+          <input type="number" id="fabric-usage" class="form-input" value="15" step="0.1">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ППУ общий вес (кг)</label>
+          <input type="number" id="pu-weight" class="form-input" value="25" step="0.1">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ППУ общая толщина (мм)</label>
+          <input type="number" id="pu-thickness" class="form-input" value="100">
+        </div>
+
+        <h3 style="margin: 1.5rem 0 1rem 0; color: var(--text);">Стоимость</h3>
+        
+        <div class="form-group">
+          <label class="form-label">Материалы (₽)</label>
+          <input type="number" id="cost-materials" class="form-input" value="25000">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Работа (₽)</label>
+          <input type="number" id="cost-labor" class="form-input" value="15000">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ППУ (₽)</label>
+          <input type="number" id="cost-pu" class="form-input" value="8000">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Цена продажи (₽)</label>
+          <input type="number" id="sale-price" class="form-input" value="75000">
+        </div>
+      </div>
+    </div>
+
+    <!-- Информация о клиенте -->
+    <div class="card">
+      <h2 class="card-title">Информация о клиенте</h2>
+      
+      <div class="grid grid-2">
+        <div class="form-group">
+          <label class="form-label">Имя *</label>
+          <input type="text" id="crm_name" class="form-input" placeholder="Иван Петров">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Телефон</label>
+          <input type="tel" id="crm_phone" class="form-input" placeholder="+7-999-123-45-67">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="crm_email" class="form-input" placeholder="ivan@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Адрес доставки</label>
+          <input type="text" id="crm_address" class="form-input" placeholder="г. Москва, ул. Примерная, д. 123">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Примечания к заказу</label>
+        <textarea id="crm_notes" class="form-input" rows="3" placeholder="Дополнительная информация о заказе"></textarea>
+      </div>
+    </div>
+
+    <!-- Кнопки действий -->
+    <div class="card">
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <button id="create-order-btn" class="btn btn-primary">
+          Создать заказ в CRM
+        </button>
+        <button id="calculate-btn" class="btn btn-success">
+          Пересчитать
+        </button>
+      </div>
+      
+      <div id="create-order-status" style="margin-top: 1rem;"></div>
+    </div>
+
+    <!-- Результат -->
+    <div class="card">
+      <h2 class="card-title">JSON данные для отправки</h2>
+      <div id="json-result" class="result">
+        <pre id="json-content">Нажмите "Пересчитать" для генерации данных</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Настройки CRM
+    const CRM_BASE = 'http://localhost:5000/api/calculator/create-order';
+    const CRM_TOKEN = 'YyYujyrcfGyvit76F56f5fUurtUTDX54dyXYchcxhtXr3yH';
+
+    // Вспомогательные функции
+    const q = (s) => document.querySelector(s);
+    const getNum = (s) => {
+      if (!s) return 0;
+      const n = String(s).replace(/[^\d.,-]/g, '').replace(',', '.');
+      const v = parseFloat(n);
+      return isFinite(v) ? v : 0;
+    };
+    const valTxt = (id) => (q('#' + id)?.value ?? '').toString().trim();
+
+    // Сбор данных калькулятора
+    function readConfig() {
+      const productType = q('#product-type')?.value || 'sofa';
+      const isBed = productType === 'bed';
+      
+      return {
+        product: {
+          type: productType,
+          complexity_factor: 1.2
+        },
+        dimensions: isBed ? {
+          bed: true,
+          width_mm: getNum(valTxt('width')),
+          length_mm: getNum(valTxt('depth')),
+          tsarga_mm: 200,
+          headboard_mm: getNum(valTxt('height'))
+        } : {
+          bed: false,
+          width_mm: getNum(valTxt('width')),
+          depth_mm: getNum(valTxt('depth')),
+          height_mm: getNum(valTxt('height'))
+        },
+        seating: {
+          firmness: 1,
+          armrests: 2
+        },
+        mechanism: {
+          code: q('#mechanism')?.value || 'eurobook',
+          cost_rub: 5000
+        },
+        materials: {
+          frame: q('#frame-type')?.value || 'сосна',
+          fabric: q('#fabric-type')?.value || 'велюр',
+          supports_rub: 2000
+        },
+        pillows: {
+          back: 3,
+          seat: 2,
+          decor: 1
+        },
+        extras: []
+      };
+    }
+
+    function readBOM() {
+      return {
+        fabric_m: getNum(valTxt('fabric-usage')),
+        pu: {
+          layers_count: 2,
+          total_thickness_mm: getNum(valTxt('pu-thickness')),
+          total_weight_kg: getNum(valTxt('pu-weight')),
+          total_cost_rub: getNum(valTxt('cost-pu')),
+          layers: [
+            {
+              brand: 'ППУ-25',
+              thickness_mm: getNum(valTxt('pu-thickness')) / 2,
+              weight_kg: getNum(valTxt('pu-weight')) / 2,
+              cost_rub: getNum(valTxt('cost-pu')) / 2
+            },
+            {
+              brand: 'ППУ-35',
+              thickness_mm: getNum(valTxt('pu-thickness')) / 2,
+              weight_kg: getNum(valTxt('pu-weight')) / 2,
+              cost_rub: getNum(valTxt('cost-pu')) / 2
+            }
+          ]
+        },
+        materials_list_text: `Ткань ${q('#fabric-type')?.value} ${getNum(valTxt('fabric-usage'))}м, ППУ ${getNum(valTxt('pu-weight'))}кг, каркас ${q('#frame-type')?.value}`
+      };
+    }
+
+    function readPricing() {
+      const materials = getNum(valTxt('cost-materials'));
+      const labor = getNum(valTxt('cost-labor'));
+      const pu = getNum(valTxt('cost-pu'));
+      const price = getNum(valTxt('sale-price'));
+      const totalCost = materials + labor + pu;
+      const margin = price - totalCost;
+      const markupPct = totalCost > 0 ? Math.round((margin / totalCost) * 100) : 0;
+
+      return {
+        materials,
+        labor,
+        pu,
+        options: 0,
+        total_cost: totalCost,
+        price,
+        margin,
+        markup_pct: markupPct
+      };
+    }
+
+    // Отправка в CRM
+    async function postOrderToCRM(payload) {
+      const url = `${CRM_BASE}?token=${CRM_TOKEN}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`CRM ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    }
+
+    // Обработчик создания заказа
+    async function handleCreateOrderClick() {
+      const statusEl = q('#create-order-status');
+      const name = valTxt('crm_name');
+      const phone = valTxt('crm_phone');
+      const email = valTxt('crm_email');
+      const notes = valTxt('crm_notes');
+
+      if (!name || (!phone && !email)) {
+        statusEl.innerHTML = '<div class="status status-error">Укажите имя и телефон или email.</div>';
+        return;
+      }
+
+      const config = readConfig();
+      const bom = readBOM();
+      const pricing = readPricing();
+      const cost = pricing.materials + pricing.labor + pricing.pu + pricing.options;
+      
+      if (pricing.price && cost && pricing.price < cost) {
+        statusEl.innerHTML = '<div class="status status-error">Цена ниже себестоимости. Проверьте наценку.</div>';
+        return;
+      }
+
+      const payload = {
+        customer: {
+          name,
+          phone: phone || null,
+          email: email || null,
+          source: 'sofany.pro'
+        },
+        order: {
+          notes: notes || null,
+          external_ref: window.location.href
+        },
+        config,
+        bom,
+        pricing
+      };
+
+      statusEl.innerHTML = '<div class="status">Отправка...</div>';
+      
+      try {
+        const data = await postOrderToCRM(payload);
+        statusEl.innerHTML = `
+          <div class="status status-success">
+            Заказ создан: <strong>${data.code || data.id || 'OK'}</strong><br>
+            <a href="http://localhost:3000/orders/${data.id}" target="_blank" style="color: var(--primary); text-decoration: underline;">
+              Открыть в CRM
+            </a>
+          </div>
+        `;
+      } catch (e) {
+        statusEl.innerHTML = `<div class="status status-error">Ошибка: ${e.message}</div>`;
+      }
+    }
+
+    // Обновление JSON
+    function updateJSON() {
+      const config = readConfig();
+      const bom = readBOM();
+      const pricing = readPricing();
+      const name = valTxt('crm_name');
+      const phone = valTxt('crm_phone');
+      const email = valTxt('crm_email');
+      const notes = valTxt('crm_notes');
+
+      const payload = {
+        customer: {
+          name: name || 'Тестовый клиент',
+          phone: phone || null,
+          email: email || null,
+          source: 'sofany.pro'
+        },
+        order: {
+          notes: notes || null,
+          external_ref: window.location.href
+        },
+        config,
+        bom,
+        pricing
+      };
+
+      q('#json-content').textContent = JSON.stringify(payload, null, 2);
+    }
+
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', () => {
+      const createBtn = q('#create-order-btn');
+      const calculateBtn = q('#calculate-btn');
+
+      if (createBtn) {
+        createBtn.addEventListener('click', handleCreateOrderClick);
+      }
+
+      if (calculateBtn) {
+        calculateBtn.addEventListener('click', updateJSON);
+      }
+
+      // Обновляем JSON при изменении полей
+      const inputs = document.querySelectorAll('input, select, textarea');
+      inputs.forEach(input => {
+        input.addEventListener('input', updateJSON);
+        input.addEventListener('change', updateJSON);
+      });
+
+      // Первоначальное обновление
+      updateJSON();
+    });
+  </script>
+</body>
+</html>
+

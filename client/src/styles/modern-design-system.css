@@ -1,0 +1,862 @@
+/* Современная дизайн-система для CRM */
+
+/* Базовые переменные */
+:root {
+  /* Цвета */
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-200: #bfdbfe;
+  --primary-300: #93c5fd;
+  --primary-400: #60a5fa;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
+  --primary-800: #1e40af;
+  --primary-900: #1e3a8a;
+
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  --success-50: #f0fdf4;
+  --success-100: #dcfce7;
+  --success-200: #bbf7d0;
+  --success-300: #86efac;
+  --success-400: #4ade80;
+  --success-500: #22c55e;
+  --success-600: #16a34a;
+  --success-700: #15803d;
+  --success-800: #166534;
+  --success-900: #14532d;
+
+  --warning-50: #fffbeb;
+  --warning-100: #fef3c7;
+  --warning-200: #fde68a;
+  --warning-300: #fcd34d;
+  --warning-400: #fbbf24;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  --warning-700: #b45309;
+  --warning-800: #92400e;
+  --warning-900: #78350f;
+
+  --danger-50: #fef2f2;
+  --danger-100: #fee2e2;
+  --danger-200: #fecaca;
+  --danger-300: #fca5a5;
+  --danger-400: #f87171;
+  --danger-500: #ef4444;
+  --danger-600: #dc2626;
+  --danger-700: #b91c1c;
+  --danger-800: #991b1b;
+  --danger-900: #7f1d1d;
+
+  /* Тени */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* Радиусы */
+  --radius-sm: 0.375rem;
+  --radius: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  /* Переходы */
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Темная тема */
+.dark {
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+}
+
+/* Базовые стили */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  line-height: 1.6;
+  color: var(--gray-900);
+  background-color: var(--gray-50);
+}
+
+/* Карточки */
+.card {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6;
+  transition: var(--transition);
+}
+
+.card:hover {
+  @apply shadow-md;
+}
+
+/* Кнопки */
+.btn {
+  @apply inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+  font-family: inherit;
+}
+
+/* Размеры кнопок */
+.btn-sm {
+  @apply px-3 py-1.5 text-sm;
+}
+
+.btn-md {
+  @apply px-4 py-2 text-sm;
+}
+
+.btn-lg {
+  @apply px-6 py-3 text-base;
+}
+
+.btn-xl {
+  @apply px-8 py-4 text-lg;
+}
+
+/* Варианты кнопок */
+.btn-primary {
+  @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm;
+}
+
+.btn-secondary {
+  @apply bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600;
+}
+
+.btn-success {
+  @apply bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 shadow-sm;
+}
+
+.btn-warning {
+  @apply bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-500 shadow-sm;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm;
+}
+
+.btn-ghost {
+  @apply bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500 dark:text-gray-300 dark:hover:bg-gray-800;
+}
+
+/* Glass кнопки */
+.btn-glass {
+  @apply inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-glass-primary {
+  @apply bg-white/10 text-white hover:bg-white/20 focus:ring-white/50 dark:bg-gray-800/50 dark:text-gray-100 dark:hover:bg-gray-700/50 dark:focus:ring-gray-500;
+}
+
+.btn-glass-secondary {
+  @apply bg-gray-100/50 text-gray-700 hover:bg-gray-200/50 focus:ring-gray-500 dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600/50;
+}
+
+.btn-glass-sm {
+  @apply px-3 py-1.5 text-sm;
+}
+
+.btn-glass-md {
+  @apply px-4 py-2 text-sm;
+}
+
+.btn-glass-lg {
+  @apply px-6 py-3 text-base;
+}
+
+/* Иконки действий */
+.icon-action {
+  @apply p-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.icon-action-primary {
+  @apply text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:ring-gray-500 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-300;
+}
+
+.icon-action-secondary {
+  @apply text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:ring-gray-500 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-400;
+}
+
+.btn-outline {
+  @apply border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800;
+}
+
+/* Поля ввода */
+.input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400;
+  transition: var(--transition);
+}
+
+.input:focus {
+  @apply shadow-sm;
+}
+
+.input:disabled {
+  @apply bg-gray-50 text-gray-500 cursor-not-allowed dark:bg-gray-800 dark:text-gray-400;
+}
+
+/* Select элементы */
+.select {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100;
+  transition: var(--transition);
+}
+
+.select:focus {
+  @apply shadow-sm;
+}
+
+/* Чекбоксы */
+.checkbox {
+  @apply h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded;
+}
+
+/* Радиокнопки */
+.radio {
+  @apply h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300;
+}
+
+/* Модальные окна */
+.modal-overlay {
+  @apply fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50;
+}
+
+.modal {
+  @apply fixed inset-0 z-50 overflow-y-auto;
+}
+
+.modal-content {
+  @apply inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full;
+}
+
+/* Уведомления */
+.notification {
+  @apply fixed top-4 right-4 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 max-w-sm;
+}
+
+/* Загрузочные состояния */
+.loading {
+  @apply animate-pulse;
+}
+
+.loading-spinner {
+  @apply animate-spin rounded-full border-4 border-t-4 border-blue-500 border-opacity-25;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.slide-out {
+  animation: slideOut 0.3s ease-out;
+}
+
+/* Утилиты */
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-400));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass {
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Адаптивность */
+@media (max-width: 640px) {
+  .card {
+    @apply p-4;
+  }
+  
+  .btn-lg {
+    @apply px-4 py-2 text-sm;
+  }
+  
+  .btn-xl {
+    @apply px-6 py-3 text-base;
+  }
+}
+
+/* Скроллбар */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--gray-800);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--gray-600);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
+}
+
+/* Фокус для доступности */
+.focus-visible {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+
+/* Выделение текста */
+::selection {
+  background-color: var(--primary-200);
+  color: var(--primary-900);
+}
+
+.dark ::selection {
+  background-color: var(--primary-800);
+  color: var(--primary-100);
+}
+
+/* === СТИЛИ ИЗ КАЛЬКУЛЯТОРА === */
+
+/* Кнопки-чекбоксы (option cards) */
+.option-card {
+  @apply p-4 border-2 border-gray-300 rounded-xl text-center cursor-pointer transition-all duration-200 bg-white dark:bg-gray-800;
+  font-family: inherit;
+}
+
+.option-card:hover {
+  @apply border-blue-500 transform -translate-y-1 shadow-md;
+}
+
+.option-card.selected {
+  @apply border-blue-500;
+  background: linear-gradient(135deg, #ecfeff 0%, #f0fdfa 100%);
+  box-shadow: var(--shadow);
+}
+
+.option-card .label {
+  @apply font-semibold text-sm text-gray-900 dark:text-gray-100 mt-2;
+}
+
+/* Мультивыбор (multi-select) */
+.multi-select-grid {
+  @apply grid gap-3 mb-4;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.multi-select-item {
+  @apply p-3 border-2 border-gray-300 rounded-lg text-center cursor-pointer transition-all duration-200 bg-white dark:bg-gray-800;
+}
+
+.multi-select-item:hover {
+  @apply border-blue-500;
+}
+
+.multi-select-item.selected {
+  @apply border-blue-500;
+  background: linear-gradient(135deg, #ecfeff 0%, #f0fdfa 100%);
+}
+
+/* Улучшенные выпадающие меню из калькулятора */
+.custom-select {
+  position: relative !important;
+  width: 100% !important;
+  z-index: 10 !important;
+}
+
+.select-selected {
+  background-color: white !important;
+  border: 2px solid #d1d5db !important;
+  border-radius: 0.5rem !important;
+  padding: 0.75rem 1rem !important;
+  color: #111827 !important;
+  cursor: pointer !important;
+  outline: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  transition: all 0.2s ease !important;
+  font-weight: 500 !important;
+  width: 100% !important;
+}
+
+.select-selected:hover {
+  border-color: #3b82f6 !important;
+}
+
+.select-selected:after {
+  content: "⌄" !important;
+  font-size: 1rem !important;
+  transition: transform 0.2s ease !important;
+  color: #6b7280 !important;
+  font-weight: 300 !important;
+}
+
+.select-selected.select-arrow-active:after {
+  transform: rotate(180deg) !important;
+  color: #3b82f6 !important;
+}
+
+.select-items {
+  position: absolute !important;
+  bottom: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  background-color: white !important;
+  border: 2px solid #d1d5db !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 -10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+  z-index: 10000 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: all 0.3s ease !important;
+  margin-bottom: 0.25rem !important;
+  width: 100% !important;
+  min-width: 120px !important;
+}
+
+.select-items.active {
+  max-height: 260px !important;
+  overflow: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  z-index: 9999 !important;
+}
+
+.select-item {
+  padding: 0.75rem 1rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  color: #111827 !important;
+  position: relative !important;
+  padding-left: 2.25rem !important;
+  display: block !important;
+}
+
+.select-item:last-child {
+  border-bottom: none !important;
+}
+
+.select-item:hover {
+  background-color: #f9fafb !important;
+  padding-left: 2.5rem !important;
+}
+
+.select-item.selected {
+  background: linear-gradient(135deg, #ecfeff 0%, #f0fdfa 100%) !important;
+  font-weight: 600 !important;
+  color: #2563eb !important;
+}
+
+.select-item.selected::before {
+  content: "✓" !important;
+  position: absolute !important;
+  left: 1rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  color: #2563eb !important;
+  font-weight: bold !important;
+}
+
+/* Dark mode */
+.dark .select-selected {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+  border-color: #4b5563 !important;
+}
+
+.dark .select-selected:hover {
+  border-color: #14b8a6 !important;
+}
+
+.dark .select-items {
+  background-color: #1f2937 !important;
+  border-color: #4b5563 !important;
+}
+
+.dark .select-item {
+  color: #f9fafb !important;
+  border-bottom-color: #4b5563 !important;
+}
+
+.dark .select-item:hover {
+  background-color: #374151 !important;
+}
+
+/* Градиентные кнопки */
+.btn-gradient {
+  @apply inline-flex items-center justify-center px-6 py-3 text-white font-semibold rounded-lg transition-all duration-200;
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-gradient:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(106, 17, 203, 0.4);
+}
+
+.btn-gradient:active {
+  transform: translateY(0);
+}
+
+/* Градиентная кнопка с NEW бейджем */
+.btn-gradient-new {
+  @apply relative inline-flex items-center justify-center px-6 py-3 text-white font-semibold rounded-lg transition-all duration-200;
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-gradient-new:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(106, 17, 203, 0.4);
+}
+
+.badge-new {
+  @apply absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full;
+  animation: pulse 2s infinite;
+}
+
+/* Кнопки вкладок из калькулятора */
+.tab-button {
+  @apply relative flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-t-xl font-semibold text-sm text-gray-700 dark:text-gray-300 cursor-pointer transition-all duration-200 text-center items-center justify-center;
+  min-height: 60px;
+}
+
+.tab-button.active {
+  @apply bg-blue-500 text-white border-blue-500;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2);
+}
+
+.tab-button:hover:not(.active) {
+  @apply border-blue-500 text-blue-600 dark:text-blue-400;
+}
+
+.tab-button::before {
+  content: attr(data-step);
+  @apply absolute left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-full flex items-center justify-center text-xs font-bold;
+}
+
+.tab-button.active::before {
+  @apply bg-white text-blue-500;
+}
+
+/* Кнопки действий из калькулятора */
+.add-layer-btn {
+  @apply block w-full py-3 bg-blue-500 text-white border-none rounded-xl text-base font-semibold cursor-pointer transition-all duration-300 mt-2;
+}
+
+.add-layer-btn:hover {
+  @apply bg-blue-600 transform -translate-y-1;
+  box-shadow: var(--shadow-hover);
+}
+
+.add-layer-btn:disabled {
+  @apply bg-gray-400 cursor-not-allowed transform-none;
+  box-shadow: none;
+}
+
+.reset-button {
+  @apply block w-full py-3 bg-red-500 text-white border-none rounded-lg text-sm font-semibold cursor-pointer transition-all duration-300;
+}
+
+.reset-button:hover {
+  @apply bg-red-600 transform -translate-y-1;
+  box-shadow: var(--shadow-hover);
+}
+
+/* Слайдеры из калькулятора */
+.slider {
+  @apply w-full h-1.5 rounded-full bg-gray-300 dark:bg-gray-600 outline-none appearance-none;
+  -webkit-appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+  @apply w-5 h-5 rounded-full bg-blue-500 cursor-pointer border-4 border-white;
+  -webkit-appearance: none;
+  appearance: none;
+  box-shadow: var(--shadow);
+}
+
+.slider::-moz-range-thumb {
+  @apply w-5 h-5 rounded-full bg-blue-500 cursor-pointer border-4 border-white;
+  box-shadow: var(--shadow);
+}
+
+/* Кнопки статусов заказа */
+.status-button {
+  @apply flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200;
+}
+
+.status-button.active {
+  @apply border-2;
+}
+
+.status-button:not(.active) {
+  @apply bg-gray-50 border border-gray-200 hover:bg-gray-100;
+}
+
+.status-button.active.teal {
+  @apply bg-teal-50 border-teal-200;
+}
+
+.status-button.active.blue {
+  @apply bg-blue-50 border-blue-200;
+}
+
+.status-button.active.orange {
+  @apply bg-orange-50 border-orange-200;
+}
+
+.status-button.active.green {
+  @apply bg-green-50 border-green-200;
+}
+
+.status-button.active.purple {
+  @apply bg-purple-50 border-purple-200;
+}
+
+.status-button.active.red {
+  @apply bg-red-50 border-red-200;
+}
+
+.status-icon {
+  @apply h-5 w-5;
+}
+
+.status-icon.active {
+  @apply text-teal-600;
+}
+
+.status-icon.active.blue {
+  @apply text-blue-600;
+}
+
+.status-icon.active.orange {
+  @apply text-orange-600;
+}
+
+.status-icon.active.green {
+  @apply text-green-600;
+}
+
+.status-icon.active.purple {
+  @apply text-purple-600;
+}
+
+.status-icon.active.red {
+  @apply text-red-600;
+}
+
+.status-icon:not(.active) {
+  @apply text-gray-400;
+}
+
+.status-title {
+  @apply font-medium;
+}
+
+.status-title.active {
+  @apply text-teal-900;
+}
+
+.status-title.active.blue {
+  @apply text-blue-900;
+}
+
+.status-title.active.orange {
+  @apply text-orange-900;
+}
+
+.status-title.active.green {
+  @apply text-green-900;
+}
+
+.status-title.active.purple {
+  @apply text-purple-900;
+}
+
+.status-title.active.red {
+  @apply text-red-900;
+}
+
+.status-title:not(.active) {
+  @apply text-gray-700;
+}
+
+.status-description {
+  @apply text-sm;
+}
+
+.status-description.active {
+  @apply text-teal-700;
+}
+
+.status-description.active.blue {
+  @apply text-blue-700;
+}
+
+.status-description.active.orange {
+  @apply text-orange-700;
+}
+
+.status-description.active.green {
+  @apply text-green-700;
+}
+
+.status-description.active.purple {
+  @apply text-purple-700;
+}
+
+.status-description.active.red {
+  @apply text-red-700;
+}
+
+.status-description:not(.active) {
+  @apply text-gray-500;
+}
+
+/* Унифицированные иконки действий */
+.icon-action {
+  @apply p-2 rounded-lg transition-all duration-200 flex items-center justify-center;
+}
+
+.icon-action-primary {
+  @apply text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20;
+}
+
+.icon-action-secondary {
+  @apply text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700;
+}
+
+.icon-action-success {
+  @apply text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20;
+}
+
+.icon-action-warning {
+  @apply text-gray-500 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20;
+}
+
+.icon-action-danger {
+  @apply text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20;
+}
+
+/* Специальные стили для выпадающих меню в таблицах */
+.table .select-items {
+  position: fixed !important;
+  z-index: 10001 !important;
+  min-width: 140px !important;
+  max-width: 200px !important;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+  .select-items {
+    @apply fixed bottom-1/2 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-11/12 max-w-sm;
+    z-index: 1000 !important;
+  }
+  
+  .select-item {
+    @apply px-4 py-4 text-base;
+    padding-left: 2.5rem;
+  }
+  
+  .select-item.selected::before {
+    @apply left-4;
+  }
+  
+  .tab-button {
+    @apply px-3 py-2 text-xs;
+    min-height: 45px;
+  }
+  
+  .option-card {
+    @apply p-3;
+  }
+  
+  .multi-select-item {
+    @apply p-2;
+  }
+  
+  .status-button {
+    @apply p-2;
+  }
+}
+

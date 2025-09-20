@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sofany Pro CRM - Канбан</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+    :root {
+        --primary: #0ea5a5;
+        --primary-dark: #0b8f8f;
+        --primary-light: #e0f7f7;
+        --success: #10b981;
+        --success-light: #d1fae5;
+        --warning: #f59e0b;
+        --warning-light: #fef3c7;
+        --error: #ef4444;
+        --error-light: #fee2e2;
+        --text: #0f172a;
+        --text-muted: #64748b;
+        --bg: #f8fafc;
+        --card-bg: #ffffff;
+        --border: #e2e8f0;
+        --border-light: #f1f5f9;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --golden-ratio: 61.8%;
+    }
+
+    .dark-theme {
+        --primary: #0ea5a5;
+        --primary-dark: #0b8f8f;
+        --primary-light: #1a3e3e;
+        --text: #e2e8f0;
+        --text-muted: #94a3b8;
+        --bg: #0f172a;
+        --card-bg: #1e293b;
+        --border: #334155;
+        --border-light: #1e293b;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Inter', sans-serif;
+    }
+
+    body {
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        padding: 1.5rem;
+        position: relative;
+        overflow-x: hidden;
+        transition: background 0.3s, color 0.3s;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .logo {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .theme-toggle {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 2rem;
+        padding: 0.5rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s;
+    }
+
+    .theme-toggle:hover {
+        box-shadow: var(--shadow);
+    }
+
+    .theme-icon {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Канбан доска */
+    .kanban-board {
+        display: flex;
+        gap: 1.5rem;
+        padding-bottom: 1rem;
+        overflow-x: hidden;
+        transition: overflow-x 0.3s;
+    }
+
+    .kanban-board:hover {
+        overflow-x: auto;
+    }
+
+    .kanban-column {
+        min-width: 320px;
+        background: var(--card-bg);
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-light);
+    }
+
+    .column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .column-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        transition: all 0.2s;
+    }
+
+    .column-title:hover {
+        background: var(--bg);
+    }
+
+    .column-sum {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--primary);
+        background: var(--primary-light);
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.5rem;
+        display: inline-block;
+        width: fit-content;
+    }
+
+    .column-count {
+        background: var(--primary-light);
+        color: var(--primary);
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 1rem;
+    }
+
+    .kanban-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        min-height: 200px;
+    }
+
+    .kanban-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        cursor: move;
+        transition: all 0.3s;
+        box-shadow: var(--shadow);
+        position: relative;
+    }
+
+    .kanban-card:hover {
+        box-shadow: var(--shadow-hover);
+        transform: translateY(-2px);
+    }
+
+    .kanban-card.dragging {
+        opacity: 0.5;
+        transform: rotate(5deg);
+        z-index: 1000;
+    }
+
+    .kanban-column.drop-area {
+        background-color: var(--primary-light);
+        border: 2px dashed var(--primary);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+
+    .card-amount {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .card-deadline {
+        display: flex;
+        align-items: center;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+    }
+
+    .client-name {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    .prepayment {
+        font-size: 0.875rem;
+        color: var(--success);
+        font-weight: 500;
+    }
+
+    /* Правая панель */
+    .detail-panel {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 61.8%;
+        max-width: 650px;
+        height: 100vh;
+        background: var(--card-bg);
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        padding: 2rem;
+        overflow-y: auto;
+        transition: right 0.3s ease;
+        border-radius: 0.75rem 0 0 0.75rem;
+        box-sizing: border-box;
+    }
+
+    .detail-panel.active {
+        right: 0;
+    }
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        display: none;
+    }
+
+    .overlay.active {
+        display: block;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text);
+    }
+
+    .close-panel {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text-muted);
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+    }
+
+    .close-panel:hover {
+        color: var(--error);
+        background: var(--error-light);
+    }
+
+    .client-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: var(--border-light);
+        border-radius: 0.5rem;
+    }
+
+    .client-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.25rem;
+    }
+
+    .client-details h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+
+    .client-details p {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+
+    .panel-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .tab {
+        padding: 0.75rem 1.5rem;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s;
+        font-weight: 500;
+        color: var(--text-muted);
+    }
+
+    .tab:hover {
+        color: var(--text);
+        background: var(--border-light);
+    }
+
+    .tab.active {
+        border-bottom-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-light);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 1024px) {
+        .detail-panel {
+            width: 75%;
+            max-width: 600px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .kanban-board {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .kanban-column {
+            min-width: unset;
+        }
+        
+        .detail-panel {
+            width: 100%;
+            min-width: unset;
+            max-width: 100%;
+            right: -100%;
+            border-radius: 0;
+            padding: 1rem;
+        }
+        
+        .detail-panel.active {
+            right: 0;
+        }
+    }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            🏠 Sofany CRM - Канбан
+        </div>
+        <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">
+            <div class="theme-icon">🌙</div>
+            <span>Темная тема</span>
+        </div>
+    </div>
+
+    <div class="kanban-board" id="kanban-board">
+        <div class="kanban-column" data-column-id="1">
+            <div class="column-header">
+                <div class="column-title">
+                    <span>Новые заказы</span>
+                    <div class="column-sum">150 000 ₽</div>
+                </div>
+                <div class="column-count">2</div>
+            </div>
+            <div class="kanban-cards">
+                <div class="kanban-card" draggable="true" data-card-id="test-1" data-card-amount="50000" onclick="openDetailPanel(this)">
+                    <div class="card-header">
+                        <div class="card-amount">50 000 ₽</div>
+                        <div class="card-deadline">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 3px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12,6 12,12 16,14"></polyline>
+                            </svg>
+                            15.09.2024
+                        </div>
+                    </div>
+                    <div class="card-title">Кухонный гарнитур "Модерн"</div>
+                    <div class="client-name">Александр Чистяков</div>
+                    <div class="prepayment">Предоплата: 25 000 ₽</div>
+                </div>
+                
+                <div class="kanban-card" draggable="true" data-card-id="test-2" data-card-amount="75000" onclick="openDetailPanel(this)">
+                    <div class="card-header">
+                        <div class="card-amount">75 000 ₽</div>
+                        <div class="card-deadline">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 3px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12,6 12,12 16,14"></polyline>
+                            </svg>
+                            20.09.2024
+                        </div>
+                    </div>
+                    <div class="card-title">Спальный гарнитур "Классик"</div>
+                    <div class="client-name">Мария Петрова</div>
+                    <div class="prepayment">Предоплата: 37 500 ₽</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="kanban-column" data-column-id="2">
+            <div class="column-header">
+                <div class="column-title">
+                    <span>В работе</span>
+                    <div class="column-sum">120 000 ₽</div>
+                </div>
+                <div class="column-count">1</div>
+            </div>
+            <div class="kanban-cards">
+                <div class="kanban-card" draggable="true" data-card-id="test-3" data-card-amount="120000" onclick="openDetailPanel(this)">
+                    <div class="card-header">
+                        <div class="card-amount">120 000 ₽</div>
+                        <div class="card-deadline">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 3px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12,6 12,12 16,14"></polyline>
+                            </svg>
+                            25.09.2024
+                        </div>
+                    </div>
+                    <div class="card-title">Гостиная "Премиум"</div>
+                    <div class="client-name">Иван Сидоров</div>
+                    <div class="prepayment">Предоплата: 60 000 ₽</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="kanban-column" data-column-id="3">
+            <div class="column-header">
+                <div class="column-title">
+                    <span>Готово</span>
+                    <div class="column-sum">0 ₽</div>
+                </div>
+                <div class="column-count">0</div>
+            </div>
+            <div class="kanban-cards">
+            </div>
+        </div>
+    </div>
+
+    <!-- Оверлей -->
+    <div class="overlay" id="overlay" onclick="closeDetailPanel()"></div>
+
+    <!-- Правая панель деталей -->
+    <div class="detail-panel" id="detail-panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Детали заказа</h2>
+            <button class="close-panel" onclick="closeDetailPanel()">&times;</button>
+        </div>
+
+        <div class="client-info">
+            <div class="client-avatar" id="detail-avatar">АЧ</div>
+            <div class="client-details">
+                <h3 id="detail-client-name">Александр Чистяков</h3>
+                <p id="detail-client-phone">+7 (999) 123-45-67</p>
+            </div>
+        </div>
+
+        <div class="panel-tabs">
+            <div class="tab active" data-tab="comments">Комментарии</div>
+            <div class="tab" data-tab="finance">Финансы</div>
+            <div class="tab" data-tab="materials">Материалы</div>
+            <div class="tab" data-tab="contacts">Контакты</div>
+        </div>
+
+        <div class="tab-content active" id="comments-tab">
+            <h3>Описание проекта</h3>
+            <p>Кухонный гарнитур в современном стиле с фасадами из МДФ, покрытыми пленкой ПВХ. Включает в себя: напольные тумбы, навесные шкафы, столешницу из искусственного камня, встроенную технику.</p>
+            
+            <h3>Комментарии</h3>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem; margin-top: 1rem;">
+                <p><strong>Менеджер:</strong> Заказ принят в работу. Ожидаем подтверждения материалов от поставщика.</p>
+                <small style="color: #6c757d;">15.09.2024 14:30</small>
+            </div>
+        </div>
+
+        <div class="tab-content" id="finance-tab">
+            <h3>Финансовая информация</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem;">
+                    <h4>Общая стоимость</h4>
+                    <p style="font-size: 1.5rem; font-weight: bold; color: #007bff;">50 000 ₽</p>
+                </div>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem;">
+                    <h4>Предоплата</h4>
+                    <p style="font-size: 1.5rem; font-weight: bold; color: #28a745;">25 000 ₽</p>
+                </div>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem;">
+                    <h4>Остаток</h4>
+                    <p style="font-size: 1.5rem; font-weight: bold; color: #ffc107;">25 000 ₽</p>
+                </div>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem;">
+                    <h4>Статус оплаты</h4>
+                    <p style="color: #28a745;">Частично оплачен</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="materials-tab">
+            <h3>Материалы</h3>
+            <div style="margin-top: 1rem;">
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                    <h4>Фасады</h4>
+                    <p>МДФ, покрытие ПВХ, цвет "Белый матовый"</p>
+                </div>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                    <h4>Столешница</h4>
+                    <p>Искусственный камень, толщина 40мм, цвет "Мрамор"</p>
+                </div>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem;">
+                    <h4>Фурнитура</h4>
+                    <p>Петли Blum, ручки "Современные", доводчики</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="contacts-tab">
+            <h3>Контактная информация</h3>
+            <div style="margin-top: 1rem;">
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                    <h4>Клиент</h4>
+                    <p><strong>Имя:</strong> Александр Чистяков</p>
+                    <p><strong>Телефон:</strong> +7 (999) 123-45-67</p>
+                    <p><strong>Email:</strong> a.chistyakov@email.com</p>
+                </div>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem;">
+                    <h4>Адрес доставки</h4>
+                    <p>г. Москва, ул. Ленина, д. 123, кв. 45</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Глобальная переменная для отслеживания активной карточки
+    let activeCardId = null;
+    let draggedCard = null;
+    
+    // Функции для работы с детальной панелью
+    function openDetailPanel(card) {
+        console.log('openDetailPanel called with card:', card);
+        const panel = document.getElementById('detail-panel');
+        const overlay = document.getElementById('overlay');
+        
+        console.log('Panel found:', !!panel);
+        console.log('Overlay found:', !!overlay);
+        
+        if (!panel) {
+            console.error('Detail panel not found!');
+            return;
+        }
+        
+        if (!overlay) {
+            console.error('Overlay not found!');
+            return;
+        }
+        
+        // Сохраняем ID активной карточки
+        activeCardId = card.getAttribute('data-card-id');
+        
+        // Заполняем данные на панели
+        const clientName = card.querySelector('.client-name').textContent;
+        const productName = card.querySelector('.card-title').textContent;
+        const amount = card.querySelector('.card-amount').textContent;
+        const prepayment = card.querySelector('.prepayment').textContent.replace('Предоплата: ', '');
+        
+        // Создаем аватар из инициалов имени
+        const clientAvatar = clientName.split(' ').map(word => word[0]).join('').toUpperCase();
+        
+        document.getElementById('detail-avatar').textContent = clientAvatar;
+        document.getElementById('detail-client-name').textContent = clientName;
+        
+        // Показываем панель и overlay
+        panel.classList.add('active');
+        overlay.classList.add('active');
+        
+        // Инициализируем табы
+        initTabs();
+        
+        // Блокируем скролл на основном контенте
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeDetailPanel() {
+        console.log('closeDetailPanel called');
+        const panel = document.getElementById('detail-panel');
+        const overlay = document.getElementById('overlay');
+        
+        if (panel) panel.classList.remove('active');
+        if (overlay) overlay.classList.remove('active');
+        
+        // Разблокируем скролл на основном контенте
+        document.body.style.overflow = '';
+    }
+    
+    // Функция для инициализации табов
+    function initTabs() {
+        console.log('Initializing tabs...');
+        
+        // Удаляем старые обработчики
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.removeEventListener('click', handleTabClick);
+        });
+        
+        // Добавляем новые обработчики
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', handleTabClick);
+        });
+    }
+    
+    function handleTabClick() {
+        console.log('Tab clicked:', this.getAttribute('data-tab'));
+        
+        // Убираем активный класс у всех табов
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        // Добавляем активный класс текущему табу
+        this.classList.add('active');
+        
+        // Скрываем все содержимое табов
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        // Показываем содержимое выбранного таба
+        const tabId = this.getAttribute('data-tab');
+        const targetTab = document.getElementById(`${tabId}-tab`);
+        if (targetTab) {
+            targetTab.classList.add('active');
+        }
+    }
+    
+    // Функции для drag & drop
+    function initializeDragAndDrop() {
+        console.log('Initializing drag and drop...');
+        const cards = document.querySelectorAll('.kanban-card');
+        const columns = document.querySelectorAll('.kanban-column');
+        
+        console.log('Found cards:', cards.length);
+        console.log('Found columns:', columns.length);
+        
+        // Добавляем обработчики для карточек
+        cards.forEach(card => {
+            card.addEventListener('dragstart', function(e) {
+                console.log('Drag start');
+                draggedCard = this;
+                this.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', this.dataset.cardId);
+            });
+            
+            card.addEventListener('dragend', function() {
+                console.log('Drag end');
+                this.classList.remove('dragging');
+                columns.forEach(col => col.classList.remove('drop-area'));
+                draggedCard = null;
+            });
+        });
+        
+        // Добавляем обработчики для колонок
+        columns.forEach(column => {
+            column.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                this.classList.add('drop-area');
+            });
+            
+            column.addEventListener('dragleave', function(e) {
+                if (!this.contains(e.relatedTarget)) {
+                    this.classList.remove('drop-area');
+                }
+            });
+            
+            column.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('drop-area');
+                
+                const cardId = e.dataTransfer.getData('text/plain');
+                const draggedCard = document.querySelector(`[data-card-id="${cardId}"]`);
+                
+                if (draggedCard) {
+                    const cardsContainer = this.querySelector('.kanban-cards');
+                    if (cardsContainer) {
+                        cardsContainer.appendChild(draggedCard);
+                        console.log('Card moved');
+                        
+                        // Обновляем счетчики и суммы
+                        updateColumnCounts();
+                        updateColumnSums();
+                    }
+                }
+            });
+        });
+    }
+    
+    // Функция для обновления счетчиков карточек в колонках
+    function updateColumnCounts() {
+        const columns = document.querySelectorAll('.kanban-column');
+        
+        columns.forEach(column => {
+            const cardsCount = column.querySelectorAll('.kanban-card').length;
+            const countElement = column.querySelector('.column-count');
+            
+            if (countElement) {
+                countElement.textContent = cardsCount;
+            }
+        });
+    }
+    
+    // Функция для вычисления суммы в колонке
+    function updateColumnSums() {
+        const columns = document.querySelectorAll('.kanban-column');
+        
+        columns.forEach(column => {
+            const cards = column.querySelectorAll('.kanban-card');
+            let total = 0;
+            
+            cards.forEach(card => {
+                const amount = parseInt(card.getAttribute('data-card-amount') || '0');
+                total += amount;
+            });
+            
+            const sumElement = column.querySelector('.column-sum');
+            if (sumElement) {
+                sumElement.textContent = total.toLocaleString('ru-RU') + ' ₽';
+            }
+        });
+    }
+    
+    // Переключение темы
+    function toggleTheme() {
+        document.body.classList.toggle('dark-theme');
+        
+        // Меняем текст кнопки
+        const themeText = document.querySelector('#theme-toggle span');
+        if (document.body.classList.contains('dark-theme')) {
+            themeText.textContent = 'Светлая тема';
+        } else {
+            themeText.textContent = 'Темная тема';
+        }
+        
+        // Сохраняем настройку темы в localStorage
+        localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+    }
+    
+    // Инициализация при загрузке
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM Content Loaded - Starting initialization...');
+        
+        // Инициализируем drag & drop
+        initializeDragAndDrop();
+        
+        // Инициализируем табы
+        initTabs();
+        
+        // Инициализируем суммы колонок
+        updateColumnSums();
+        updateColumnCounts();
+        
+        // Обработчик клавиши Escape для закрытия панели
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDetailPanel();
+            }
+        });
+        
+        console.log('Initialization complete');
+    });
+    </script>
+</body>
+</html>
+
+

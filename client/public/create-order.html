@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создание заказа</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .success { color: green; margin-top: 10px; }
+        .error { color: red; margin-top: 10px; }
+        .loading { color: blue; margin-top: 10px; }
+        .item-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .item-row input { flex: 1; }
+        .item-row button { width: auto; padding: 8px 12px; }
+        #items { border: 1px solid #ddd; padding: 15px; border-radius: 4px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <h1>Создание заказа</h1>
+    
+    <form id="orderForm">
+        <div class="form-group">
+            <label for="customerName">Имя клиента *</label>
+            <input type="text" id="customerName" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="customerPhone">Телефон</label>
+            <input type="tel" id="customerPhone">
+        </div>
+        
+        <div class="form-group">
+            <label for="customerEmail">Email</label>
+            <input type="email" id="customerEmail">
+        </div>
+        
+        <div class="form-group">
+            <label for="productName">Наименование изделия</label>
+            <input type="text" id="productName">
+        </div>
+        
+        <div class="form-group">
+            <label for="status">Статус</label>
+            <select id="status">
+                <option value="new">Новый</option>
+                <option value="confirmed">Подтвержден</option>
+                <option value="in_production">В производстве</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="priority">Приоритет</label>
+            <select id="priority">
+                <option value="low">Низкий</option>
+                <option value="normal">Обычный</option>
+                <option value="high">Высокий</option>
+                <option value="urgent">Срочно</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="totalAmount">Общая сумма</label>
+            <input type="number" id="totalAmount" step="0.01" min="0">
+        </div>
+        
+        <div class="form-group">
+            <label for="notes">Примечания</label>
+            <textarea id="notes" rows="3"></textarea>
+        </div>
+        
+        <div id="items">
+            <h3>Позиции заказа</h3>
+            <div id="itemsList"></div>
+            <button type="button" onclick="addItem()">Добавить позицию</button>
+        </div>
+        
+        <button type="submit" id="submitBtn">Создать заказ</button>
+        <div id="result"></div>
+    </form>
+
+    <script>
+        let itemCount = 0;
+        
+        function addItem() {
+            itemCount++;
+            const itemsList = document.getElementById('itemsList');
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'item-row';
+            itemDiv.innerHTML = `
+                <input type="text" placeholder="Наименование" name="itemName${itemCount}">
+                <input type="number" placeholder="Количество" name="itemQuantity${itemCount}" min="1" value="1">
+                <input type="number" placeholder="Цена за ед." name="itemPrice${itemCount}" step="0.01" min="0">
+                <button type="button" onclick="removeItem(this)">Удалить</button>
+            `;
+            itemsList.appendChild(itemDiv);
+        }
+        
+        function removeItem(button) {
+            button.parentElement.remove();
+        }
+        
+        document.getElementById('orderForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const resultDiv = document.getElementById('result');
+            
+            submitBtn.disabled = true;
+            resultDiv.innerHTML = '<div class="loading">Создание заказа...</div>';
+            
+            try {
+                // Авторизация
+                const authResponse = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'admin@sofany.com', password: 'admin123' })
+                });
+                
+                if (!authResponse.ok) {
+                    throw new Error('Ошибка авторизации: ' + authResponse.status);
+                }
+                
+                const authData = await authResponse.json();
+                const token = authData.token;
+                
+                // Собираем данные заказа
+                const orderData = {
+                    customer_name: document.getElementById('customerName').value,
+                    customer_phone: document.getElementById('customerPhone').value,
+                    customer_email: document.getElementById('customerEmail').value,
+                    product_name: document.getElementById('productName').value,
+                    status: document.getElementById('status').value,
+                    priority: document.getElementById('priority').value,
+                    total_amount: parseFloat(document.getElementById('totalAmount').value) || 0,
+                    notes: document.getElementById('notes').value,
+                    items: []
+                };
+                
+                // Собираем позиции заказа
+                const itemRows = document.querySelectorAll('.item-row');
+                itemRows.forEach(row => {
+                    const name = row.querySelector('input[type="text"]').value;
+                    const quantity = parseFloat(row.querySelector('input[type="number"][placeholder="Количество"]').value) || 1;
+                    const price = parseFloat(row.querySelector('input[type="number"][placeholder="Цена за ед."]').value) || 0;
+                    
+                    if (name) {
+                        orderData.items.push({
+                            name: name,
+                            quantity: quantity,
+                            unit_price: price
+                        });
+                    }
+                });
+                
+                // Создание заказа
+                const createResponse = await fetch('http://localhost:5000/api/orders', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(orderData)
+                });
+                
+                if (!createResponse.ok) {
+                    const errorData = await createResponse.json();
+                    throw new Error('Ошибка создания заказа: ' + (errorData.message || createResponse.status));
+                }
+                
+                const orderResult = await createResponse.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        Заказ успешно создан!<br>
+                        Номер заказа: ${orderResult.order?.order_number || 'Не указан'}<br>
+                        ID: ${orderResult.order?.id || 'Не указан'}<br>
+                        QR-код: ${orderResult.order?.qr_code_id || 'Не сгенерирован'}
+                    </div>
+                `;
+                
+                // Очищаем форму
+                document.getElementById('orderForm').reset();
+                document.getElementById('itemsList').innerHTML = '';
+                itemCount = 0;
+                
+            } catch (error) {
+                console.error('Ошибка:', error);
+                resultDiv.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+        
+        // Добавляем первую позицию при загрузке
+        addItem();
+    </script>
+</body>
+</html>

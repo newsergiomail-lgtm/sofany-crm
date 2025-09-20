@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Dropdowns</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .custom-select {
+            position: relative !important;
+            width: 100% !important;
+            z-index: 1 !important;
+            margin-bottom: 1rem;
+        }
+
+        .select-selected {
+            background-color: white !important;
+            border: 2px solid #d1d5db !important;
+            border-radius: 0.5rem !important;
+            padding: 0.75rem 1rem !important;
+            color: #111827 !important;
+            cursor: pointer !important;
+            outline: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            transition: all 0.2s ease !important;
+            font-weight: 500 !important;
+            width: 100% !important;
+        }
+
+        .select-selected:hover {
+            border-color: #3b82f6 !important;
+        }
+
+        .select-selected:after {
+            content: "⌄" !important;
+            font-size: 1rem !important;
+            transition: transform 0.2s ease !important;
+            color: #6b7280 !important;
+            font-weight: 300 !important;
+        }
+
+        .select-selected.select-arrow-active:after {
+            transform: rotate(180deg) !important;
+            color: #3b82f6 !important;
+        }
+
+        .select-items {
+            position: absolute !important;
+            top: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            background-color: white !important;
+            border: 2px solid #d1d5db !important;
+            border-radius: 0.5rem !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+            z-index: 99999 !important;
+            max-height: 0 !important;
+            overflow: hidden !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            transition: all 0.3s ease !important;
+            margin-top: 0.25rem !important;
+            width: 100% !important;
+        }
+
+        .select-items.active {
+            max-height: 260px !important;
+            overflow: auto !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+        }
+
+        .select-item {
+            padding: 0.75rem 1rem !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            border-bottom: 1px solid #e5e7eb !important;
+            color: #111827 !important;
+            position: relative !important;
+            padding-left: 2.25rem !important;
+            display: block !important;
+        }
+
+        .select-item:last-child {
+            border-bottom: none !important;
+        }
+
+        .select-item:hover {
+            background-color: #f9fafb !important;
+            padding-left: 2.5rem !important;
+        }
+
+        .select-item.selected {
+            background: linear-gradient(135deg, #ecfeff 0%, #f0fdfa 100%) !important;
+            font-weight: 600 !important;
+            color: #2563eb !important;
+        }
+
+        .select-item.selected::before {
+            content: "✓" !important;
+            position: absolute !important;
+            left: 1rem !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            color: #2563eb !important;
+            font-weight: bold !important;
+        }
+        
+        .debug-info {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Debug Dropdowns</h1>
+        <p>Тестируем выпадающие меню с принудительными стилями</p>
+        
+        <div class="custom-select">
+            <div class="select-selected" onclick="toggleSelect('test1')">
+                <span id="test1-text">Выберите статус</span>
+            </div>
+            <div class="select-items" id="test1-items">
+                <div class="select-item" onclick="selectOption('test1', 'new', 'Новый')">Новый</div>
+                <div class="select-item" onclick="selectOption('test1', 'confirmed', 'Подтвержден')">Подтвержден</div>
+                <div class="select-item" onclick="selectOption('test1', 'in_production', 'В производстве')">В производстве</div>
+                <div class="select-item" onclick="selectOption('test1', 'ready', 'Готов')">Готов</div>
+            </div>
+        </div>
+        
+        <div class="custom-select">
+            <div class="select-selected" onclick="toggleSelect('test2')">
+                <span id="test2-text">Выберите приоритет</span>
+            </div>
+            <div class="select-items" id="test2-items">
+                <div class="select-item" onclick="selectOption('test2', 'urgent', 'Срочно')">Срочно</div>
+                <div class="select-item" onclick="selectOption('test2', 'high', 'Высокий')">Высокий</div>
+                <div class="select-item" onclick="selectOption('test2', 'normal', 'Обычный')">Обычный</div>
+                <div class="select-item" onclick="selectOption('test2', 'low', 'Низкий')">Низкий</div>
+            </div>
+        </div>
+        
+        <div class="debug-info" id="debug-info">
+            <strong>Debug Info:</strong><br>
+            <span id="debug-text">Кликните на выпадающие меню для тестирования</span>
+        </div>
+    </div>
+
+    <script>
+        function toggleSelect(type) {
+            console.log('Toggle select:', type);
+            
+            // Закрываем все другие выпадающие меню
+            document.querySelectorAll('.select-items').forEach(item => {
+                if (item.id !== type + '-items') {
+                    item.classList.remove('active');
+                }
+            });
+            
+            // Переключаем текущее меню
+            const items = document.getElementById(type + '-items');
+            const selected = document.querySelector(`[onclick="toggleSelect('${type}')"]`);
+            
+            console.log('Items element:', items);
+            console.log('Selected element:', selected);
+            console.log('Items has active class:', items.classList.contains('active'));
+            
+            if (items.classList.contains('active')) {
+                items.classList.remove('active');
+                selected.classList.remove('select-arrow-active');
+                updateDebug(`Закрыто меню: ${type}`);
+            } else {
+                items.classList.add('active');
+                selected.classList.add('select-arrow-active');
+                updateDebug(`Открыто меню: ${type}`);
+            }
+        }
+
+        function selectOption(type, value, text) {
+            console.log('Select option:', type, value, text);
+            
+            // Обновляем отображаемый текст
+            document.getElementById(type + '-text').textContent = text;
+            
+            // Обновляем выбранный элемент
+            document.querySelectorAll(`#${type}-items .select-item`).forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            // Закрываем выпадающее меню
+            const items = document.getElementById(type + '-items');
+            const selected = document.querySelector(`[onclick="toggleSelect('${type}')"]`);
+            items.classList.remove('active');
+            selected.classList.remove('select-arrow-active');
+            
+            updateDebug(`Выбрано: ${text} (${value})`);
+        }
+        
+        function updateDebug(message) {
+            const debugText = document.getElementById('debug-text');
+            const timestamp = new Date().toLocaleTimeString();
+            debugText.innerHTML = `[${timestamp}] ${message}`;
+        }
+        
+        // Закрытие выпадающих меню при клике вне их
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.custom-select')) {
+                document.querySelectorAll('.select-items').forEach(item => {
+                    item.classList.remove('active');
+                });
+                document.querySelectorAll('.select-selected').forEach(selected => {
+                    selected.classList.remove('select-arrow-active');
+                });
+                updateDebug('Закрыты все меню (клик вне)');
+            }
+        });
+        
+        // Проверяем стили при загрузке
+        window.addEventListener('load', function() {
+            const selectItems = document.querySelectorAll('.select-items');
+            selectItems.forEach((item, index) => {
+                const computedStyle = window.getComputedStyle(item);
+                console.log(`Select items ${index}:`, {
+                    display: computedStyle.display,
+                    visibility: computedStyle.visibility,
+                    opacity: computedStyle.opacity,
+                    maxHeight: computedStyle.maxHeight,
+                    position: computedStyle.position,
+                    zIndex: computedStyle.zIndex
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

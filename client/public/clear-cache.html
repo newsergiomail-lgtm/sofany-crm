@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Очистка кэша</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            border-radius: 5px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Очистка кэша CRM</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Внимание!</strong> Эта страница поможет очистить кэш браузера и устранить ошибки компиляции.
+        </div>
+
+        <div class="step">
+            <h3>1. Очистка кэша браузера</h3>
+            <p>Нажмите <strong>Ctrl+Shift+R</strong> (Windows) или <strong>Cmd+Shift+R</strong> (Mac) для принудительной перезагрузки</p>
+        </div>
+
+        <div class="step">
+            <h3>2. Очистка через DevTools</h3>
+            <p>Откройте DevTools (F12) → Network → поставьте галочку "Disable cache" → перезагрузите страницу</p>
+        </div>
+
+        <div class="step">
+            <h3>3. Очистка через настройки браузера</h3>
+            <p>Chrome: Настройки → Дополнительные → Очистить данные просмотра → Выберите "Все время" → Очистить</p>
+        </div>
+
+        <div class="step">
+            <h3>4. Перезапуск сервера</h3>
+            <p>Остановите сервер (Ctrl+C) и запустите заново с очисткой кэша:</p>
+            <code>npm run fresh-start</code>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="/" class="button">🏠 Вернуться к CRM</a>
+            <a href="javascript:location.reload(true)" class="button">🔄 Принудительная перезагрузка</a>
+        </div>
+    </div>
+
+    <script>
+        // Автоматическая очистка localStorage и sessionStorage
+        localStorage.clear();
+        sessionStorage.clear();
+        console.log('✅ localStorage и sessionStorage очищены');
+        
+        // Очистка Service Worker кэша
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                }
+                console.log('✅ Service Workers очищены');
+            });
+        }
+        
+        // Очистка кэша приложения
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                for (let name of names) {
+                    caches.delete(name);
+                }
+                console.log('✅ Application Cache очищен');
+            });
+        }
+    </script>
+</body>
+</html>
+
+
+
+

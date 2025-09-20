@@ -1,0 +1,77 @@
+{
+  "name": "sofany-crm-client",
+  "version": "1.0.0",
+  "description": "Frontend для CRM системы Sofany",
+  "private": true,
+  "dependencies": {
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^14.5.2",
+    "axios": "^1.6.2",
+    "clsx": "^2.0.0",
+    "date-fns": "^2.30.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.2",
+    "jspdf-autotable": "^5.0.2",
+    "lucide-react": "^0.294.0",
+    "qr-scanner": "^1.4.2",
+    "react": "^18.2.0",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-datepicker": "^8.7.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.48.2",
+    "react-hot-toast": "^2.4.1",
+    "react-query": "^3.39.3",
+    "react-router-dom": "^6.8.1",
+    "react-scripts": "^5.0.1",
+    "recharts": "^2.8.0",
+    "tailwind-merge": "^2.0.0",
+    "web-vitals": "^2.1.4",
+    "xlsx": "^0.18.5"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "start-servers": "node start-servers.js",
+    "quick-install": "node quick-install.js",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "dev": "react-scripts start",
+    "clear-cache": "node clear-cache.js",
+    "clear-all-cache": "node clear-all-cache.js",
+    "clear-webpack": "node clear-webpack-cache.js",
+    "check-sourcemaps": "node check-sourcemaps.js",
+    "check-imports": "node check-imports.js",
+    "fix-cache": "node fix-cache-issues.js",
+    "ultimate-fix": "node ultimate-fix.js",
+    "force-clear": "node force-clear-cache.js",
+    "fresh-start": "npm run clear-all-cache && npm start",
+    "reset": "npm run clear-all-cache && rm -rf node_modules package-lock.json && npm install && npm start"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "source-map-loader": "^5.0.0",
+    "tailwindcss": "^3.3.6"
+  },
+  "proxy": "http://localhost:5000"
+}

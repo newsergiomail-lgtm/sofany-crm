@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статус системы SofanyCRM</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        .status {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        .status.error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .status.warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online {
+            background: #28a745;
+        }
+        .status-offline {
+            background: #dc3545;
+        }
+        .links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .link-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .link-card:hover {
+            border-color: #007bff;
+            transform: translateY(-2px);
+        }
+        .link-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .link-card p {
+            margin: 0 0 15px 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SofanyCRM</h1>
+        <p class="subtitle">Статус системы</p>
+        
+        <div class="status" id="status">
+            <h3>📊 Статус компонентов</h3>
+            <p>
+                <span class="status-indicator status-offline" id="server-status"></span>
+                Сервер API: <span id="server-text">Проверка...</span>
+            </p>
+            <p>
+                <span class="status-indicator status-offline" id="client-status"></span>
+                Клиент: <span id="client-text">Проверка...</span>
+            </p>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Проверка статуса системы...</p>
+        </div>
+
+        <div class="links">
+            <div class="link-card">
+                <h3>🌐 Клиент (React)</h3>
+                <p>Интерфейс CRM системы</p>
+                <a href="http://localhost:3000" class="btn btn-success" target="_blank">Открыть клиент</a>
+            </div>
+            
+            <div class="link-card">
+                <h3>🔧 Сервер API</h3>
+                <p>Backend для работы с данными</p>
+                <a href="http://localhost:5000" class="btn" target="_blank">Открыть API</a>
+            </div>
+            
+            <div class="link-card">
+                <h3>📋 Заказы</h3>
+                <p>Управление заказами</p>
+                <a href="http://localhost:3000/orders" class="btn btn-success" target="_blank">Открыть заказы</a>
+            </div>
+            
+            <div class="link-card">
+                <h3>🏭 Канбан</h3>
+                <p>Канбан-доска производства</p>
+                <a href="http://localhost:3000/kanban" class="btn" target="_blank">Открыть канбан</a>
+            </div>
+            
+            <div class="link-card">
+                <h3>⚙️ Производство</h3>
+                <p>Модуль производства</p>
+                <a href="http://localhost:3000/production" class="btn" target="_blank">Открыть производство</a>
+            </div>
+            
+            <div class="link-card">
+                <h3>❤️ Проверка API</h3>
+                <p>Тест здоровья сервера</p>
+                <a href="http://localhost:5000/api/health" class="btn" target="_blank">Проверить API</a>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn" onclick="checkStatus()">
+                🔄 Обновить статус
+            </button>
+            <button class="btn btn-success" onclick="openCRM()">
+                🚀 Открыть CRM
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Проверка статуса сервера
+        async function checkServerStatus() {
+            try {
+                const response = await fetch('http://localhost:5000/api/health');
+                if (response.ok) {
+                    document.getElementById('server-status').className = 'status-indicator status-online';
+                    document.getElementById('server-text').textContent = 'Онлайн';
+                    return true;
+                } else {
+                    throw new Error('Сервер не отвечает');
+                }
+            } catch (error) {
+                document.getElementById('server-status').className = 'status-indicator status-offline';
+                document.getElementById('server-text').textContent = 'Офлайн';
+                return false;
+            }
+        }
+
+        // Проверка статуса клиента
+        async function checkClientStatus() {
+            try {
+                const response = await fetch('http://localhost:3000');
+                if (response.ok) {
+                    document.getElementById('client-status').className = 'status-indicator status-online';
+                    document.getElementById('client-text').textContent = 'Онлайн';
+                    return true;
+                } else {
+                    throw new Error('Клиент не отвечает');
+                }
+            } catch (error) {
+                document.getElementById('client-status').className = 'status-indicator status-offline';
+                document.getElementById('client-text').textContent = 'Офлайн';
+                return false;
+            }
+        }
+
+        // Проверка статуса
+        async function checkStatus() {
+            const loading = document.getElementById('loading');
+            const status = document.getElementById('status');
+            
+            loading.style.display = 'block';
+            
+            const serverOnline = await checkServerStatus();
+            const clientOnline = await checkClientStatus();
+            
+            loading.style.display = 'none';
+            
+            if (serverOnline && clientOnline) {
+                status.className = 'status';
+                status.innerHTML = '<h3>✅ Система полностью работает!</h3><p>Все компоненты запущены и готовы к работе</p>';
+            } else if (clientOnline) {
+                status.className = 'status warning';
+                status.innerHTML = '<h3>⚠️ Частично работает</h3><p>Клиент работает, но сервер API не отвечает</p>';
+            } else {
+                status.className = 'status error';
+                status.innerHTML = '<h3>❌ Система не работает</h3><p>Необходимо запустить компоненты</p>';
+            }
+        }
+
+        // Открыть CRM
+        function openCRM() {
+            window.open('http://localhost:3000', '_blank');
+        }
+
+        // Проверяем статус каждые 5 секунд
+        setInterval(checkStatus, 5000);
+
+        // Первоначальная проверка
+        checkStatus();
+    </script>
+</body>
+</html>

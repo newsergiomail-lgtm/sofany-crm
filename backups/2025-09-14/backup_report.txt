@@ -1,0 +1,51 @@
+=== ОТЧЕТ О БЭКАПАХ 2025-09-14 ===
+Время создания: воскресенье, 14 сентября 2025 г. 19:11:55 (MSK)
+
+=== ФАЙЛЫ JS ===
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/CreateOrderNew_15-10-05.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/MaterialMappingModal_15-10-27.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/OrderDetail_15-10-07.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/api_15-10-10.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/App_19-11-18.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/components/Layout/Layout_19-11-17.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/components/Layout/Sidebar_19-11-17.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/components/MaterialMapping/MaterialMappingModal_19-11-17.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/components/Orders/OrderFilters_19-11-18.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/components/Orders/OrderTable_19-11-17.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/components/Production/QRCodeGenerator_19-11-17.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/components/QRCodeImage_19-11-18.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/pages/Customers/Customers_19-11-18.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/pages/Employees/Employees_19-11-18.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/pages/Orders/CreateOrderNew_19-11-18.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/pages/Orders/CreateOrderWizard_19-11-18.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/pages/Orders/CreateOrder_19-11-18.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/pages/Orders/OrderDetail_19-11-18.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/pages/Orders/OrderSpecification_19-11-18.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/pages/Orders/Orders_19-11-18.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/services/api_19-11-19.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/src/services/productionAPI_19-11-18.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/materialMapping_15-10-24.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/materialNormalizer_15-10-20.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/purchase_15-10-15.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/server/routes/customers_19-11-17.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/server/routes/employees_19-11-17.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/server/routes/materialMapping_19-11-17.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/server/routes/orders_19-11-17.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/server/routes/production_19-11-17.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/server/routes/purchase_19-11-17.js
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/server/services/materialNormalizer_19-11-17.js
+
+=== ФАЙЛЫ HTML ===
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/public/Kanban_19-11-40.html
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/public/Kanban_backup_20250914_105312_19-11-40.html
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/public/index_19-11-40.html
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/client/public/mobile-production_19-11-39.html
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/debug-dropdowns_19-11-39.html
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/test-dropdown-final_19-11-39.html
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/test-dropdown-fix_19-11-40.html
+/Users/workunital/Documents/SofanyCRM/backups/2025-09-14/test-native-select_19-11-39.html
+
+=== СТАТИСТИКА ===
+Всего JS файлов:       32
+Всего HTML файлов:        8
+Общий размер: 1,3M

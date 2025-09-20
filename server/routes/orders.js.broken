@@ -1,0 +1,1390 @@
+const express = require('express');
+const Joi = require('joi');
+const multer = require('multer');
+const qrcode = require('qrcode-generator');
+const db = require('../config/database');
+const { authenticateToken, requireRole } = require('../middleware/auth');
+
+const router = express.Router();
+
+// Функция для генерации QR-кода
+function generateQRCode(data) {
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(JSON.stringify(data));
+    qr.make();
+    return qr.createDataURL(4);
+  } catch (error) {
+    console.error('Ошибка генерации QR-кода:', error);
+    return null;
+  }
+}
+
+// Настройка multer для загрузки файлов
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    // Исправляем кодировку имени файла
+    if (file.originalname) {
+      try {
+        file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+      } catch (error) {
+        // Если не получается исправить, используем оригинальное имя
+        console.log('Не удалось исправить кодировку имени файла:', error.message);
+      }
+    }
+    
+    // Разрешенные типы файлов
+    const allowedTypes = /jpeg|jpg|png|gif|pdf|dwg|dxf|skp|svg|tiff|bmp/;
+    const allowedMimeTypes = /image\/|application\/pdf|application\/dwg|application\/dxf|application\/x-koan/;
+    const extname = allowedTypes.test(file.originalname.toLowerCase());
+    const mimetype = allowedMimeTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      console.log('Отклонен файл:', file.originalname, 'тип:', file.mimetype);
+      cb(new Error('Неподдерживаемый тип файла'));
+    }
+  }
+});
+
+// Функция генерации номера заказа
+async function generateOrderNumber(client) {
+  try {
+    // Используем timestamp, случайное число и процесс ID для максимальной уникальности
+    const now = new Date();
+    const timestamp = Math.floor(now.getTime() / 1000); // Используем секунды вместо миллисекунд
+    const random1 = Math.floor(Math.random() * 10000);
+    const random2 = Math.floor(Math.random() * 1000);
+    
+    // Создаем уникальный номер
+    const orderNumber = `SOF-${timestamp}-${random1}-${random2}`;
+    
+    console.log('Генерируем номер заказа:', orderNumber);
+    
+    // Проверяем уникальность
+    const existingOrder = await client.query(
+      'SELECT id FROM orders WHERE order_number = $1',
+      [orderNumber]
+    );
+    
+    if (existingOrder.rows.length > 0) {
+      // Если номер уже существует, генерируем новый с еще большей случайностью
+      const fallbackNumber = `SOF-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+      console.log('Дублирование номера, используем fallback:', fallbackNumber);
+      
+      // Проверяем уникальность fallback номера
+      const existingFallback = await client.query(
+        'SELECT id FROM orders WHERE order_number = $1',
+        [fallbackNumber]
+      );
+      
+      if (existingFallback.rows.length > 0) {
+        // Если и fallback существует, используем UUID
+        const uuidNumber = `SOF-${Date.now()}-${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+        console.log('Fallback тоже дублируется, используем UUID:', uuidNumber);
+        return uuidNumber;
+      }
+      
+      return fallbackNumber;
+    }
+    
+    return orderNumber;
+  } catch (error) {
+    console.error('Ошибка генерации номера заказа:', error);
+    // В случае ошибки возвращаем простой номер с UUID
+    const fallbackNumber = `SOF-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    console.log('Используем fallback номер из-за ошибки:', fallbackNumber);
+    return fallbackNumber;
+  }
+}
+
+// Схемы валидации
+const orderSchema = Joi.object({
+  // Поддержка как customer_id, так и данных клиента
+  customer_id: Joi.number().integer().optional(),
+  customer_name: Joi.string().allow('').optional(),
+  customer_phone: Joi.string().allow('').optional(),
+  customer_email: Joi.string().email().allow('', null).optional(),
+  customer_company: Joi.string().allow('').optional(),
+  product_name: Joi.string().allow(''),
+  status: Joi.string().valid('new', 'draft', 'confirmed', 'in_production', 'ready', 'shipped', 'delivered', 'cancelled').default('new'),
+  priority: Joi.string().valid('low', 'normal', 'high', 'urgent').default('normal'),
+  delivery_date: Joi.date().allow(null),
+  total_amount: Joi.number().min(0).allow(null),
+  prepayment_amount: Joi.number().min(0).allow(null),
+  paid_amount: Joi.number().min(0).allow(null),
+  notes: Joi.string().allow(''),
+  // Плоские поля доставки
+  delivery_address: Joi.string().allow('', null),
+  has_elevator: Joi.boolean().allow(null),
+  floor: Joi.alternatives().try(Joi.number().integer(), Joi.string()).allow('', null),
+  delivery_notes: Joi.string().allow('', null),
+  // Дополнительные структурированные данные
+  calculator_data: Joi.any().optional(),
+  short_description: Joi.string().allow('', null),
+  detailed_description: Joi.string().allow('', null),
+  items: Joi.array().items(Joi.object({
+    name: Joi.string().required(),
+    description: Joi.string().allow(''),
+    quantity: Joi.number().integer().min(1).required(),
+    unit_price: Joi.number().min(0).required()
+  })).min(1).required()
+});
+
+// Получение заказов для канбана (новые и в производстве)
+router.get('/kanban', authenticateToken, async (req, res) => {
+  try {
+    const client = await db.pool.connect();
+    
+    // Получаем заказы со статусом 'in_production' (только в производстве)
+    const result = await client.query(`
+      SELECT 
+        o.id,
+        o.order_number,
+        o.product_name,
+        o.status,
+        o.priority,
+        o.total_amount,
+        o.paid_amount,
+        o.delivery_date,
+        o.notes,
+        o.created_at,
+        o.updated_at,
+        o.project_description,
+        o.delivery_address,
+        o.has_elevator,
+        o.floor,
+        c.name as customer_name,
+        c.phone as customer_phone,
+        c.email as customer_email,
+        c.company as customer_company,
+        COALESCE(po.production_stage, 'КБ') as production_stage,
+        COALESCE(po.status, 'in_progress') as production_status,
+        COALESCE(po.created_at, o.created_at) as stage_started_at
+      FROM orders o
+      LEFT JOIN customers c ON o.customer_id = c.id
+      LEFT JOIN production_operations po ON o.id = po.order_id 
+        AND po.status = 'in_progress' 
+        AND po.operation_type = 'produce'
+      WHERE o.status = 'in_production'
+      ORDER BY o.priority DESC, o.created_at ASC
+    `);
+    
+    client.release();
+    
+    // Получаем колонки канбана из базы данных
+    const columnsResult = await client.query(`
+      SELECT * FROM kanban_columns 
+      WHERE is_active = true 
+      ORDER BY position ASC
+    `);
+    
+    // Группируем заказы по этапам производства с поддержкой параллельных веток
+    const kanbanData = {
+      columns: columnsResult.rows.map(col => ({
+        id: col.id,
+        title: col.title,
+        color: col.color,
+        type: col.type,
+        cards: []
+      }))
+    };
+    
+    // Функция для определения статуса веток
+    function determineBranchStatus(stage) {
+      const branchStatus = {
+        frame: 'not_started',
+        upholstery: 'not_started'
+      };
+      
+      switch (stage) {
+        case 'КБ':
+          branchStatus.frame = 'not_started';
+          branchStatus.upholstery = 'not_started';
+          break;
+        case 'Столярный цех':
+          branchStatus.frame = 'in_progress';
+          branchStatus.upholstery = 'not_started';
+          break;
+        case 'Формовка':
+          branchStatus.frame = 'in_progress';
+          branchStatus.upholstery = 'not_started';
+          break;
+        case 'Швейный цех':
+          branchStatus.frame = 'not_started';
+          branchStatus.upholstery = 'in_progress';
+          break;
+        case 'Обивка':
+          branchStatus.frame = 'not_started';
+          branchStatus.upholstery = 'in_progress';
+          break;
+        case 'Сборка и упаковка':
+          branchStatus.frame = 'completed';
+          branchStatus.upholstery = 'completed';
+          break;
+        case 'Отгружен':
+          branchStatus.frame = 'completed';
+          branchStatus.upholstery = 'completed';
+          break;
+        default:
+          // Для сложных случаев - заказ может быть в нескольких ветках одновременно
+          if (stage.includes('Столярный') || stage.includes('Формовка')) {
+            branchStatus.frame = 'in_progress';
+          }
+          if (stage.includes('Швейный') || stage.includes('Обивка')) {
+            branchStatus.upholstery = 'in_progress';
+          }
+      }
+      
+      return branchStatus;
+    }
+
+    // Распределяем заказы по колонкам с поддержкой параллельных веток
+    // Используем Map для предотвращения дублирования заказов
+    const processedOrders = new Map();
+    
+    result.rows.forEach(order => {
+      // Проверяем, не обрабатывали ли мы уже этот заказ
+      if (processedOrders.has(order.id)) {
+        return;
+      }
+      
+      let stage = order.production_stage || 'КБ'; // По умолчанию КБ только если нет данных
+      let columnIndex = kanbanData.columns.findIndex(col => col.title === stage);
+      
+      // Если стадия не найдена в колонках, ищем ближайшую подходящую
+      if (columnIndex === -1) {
+        // Список этапов в порядке приоритета
+        const stagePriority = ['КБ', 'Столярный цех', 'Формовка', 'Швейный цех', 'Обивка', 'Сборка и упаковка', 'Отгружен'];
+        
+        // Ищем первую подходящую стадию
+        for (const priorityStage of stagePriority) {
+          const priorityIndex = kanbanData.columns.findIndex(col => col.title === priorityStage);
+          if (priorityIndex !== -1) {
+            stage = priorityStage;
+            columnIndex = priorityIndex;
+            break;
+          }
+        }
+        
+        // Если ничего не найдено, используем первую доступную колонку
+        if (columnIndex === -1 && kanbanData.columns.length > 0) {
+          stage = kanbanData.columns[0].title;
+          columnIndex = 0;
+        }
+      }
+      
+      if (columnIndex !== -1) {
+        // Определяем статус веток на основе текущего этапа
+        const branches = determineBranchStatus(stage);
+        
+        const card = {
+          id: order.id,
+          order_number: order.order_number,
+          product_name: order.product_name,
+          client: order.customer_name,
+          phone: order.customer_phone,
+          email: order.customer_email,
+          company: order.customer_company,
+          price: parseFloat(order.total_amount),
+          prepayment: parseFloat(order.paid_amount),
+          deadline: order.delivery_date,
+          priority: order.priority,
+          notes: order.notes,
+          project_description: order.project_description,
+          short_description: order.short_description,
+          detailed_description: order.detailed_description,
+          delivery_address: order.delivery_address,
+          has_elevator: order.has_elevator,
+          floor: order.floor,
+          additional_contact: order.additional_contact,
+          preferred_contact: order.preferred_contact,
+          status: columnIndex + 1,
+          color: order.blocked_by_materials ? "#ffebee" : "#ffffff",
+          created_at: order.created_at,
+          stage_started_at: order.stage_started_at,
+          // Статус веток
+          branches: branches,
+          // Готовность к сборке
+          ready_for_assembly: branches.frame === 'completed' && branches.upholstery === 'completed',
+          // Блокировки материалов
+          blocked_by_materials: order.blocked_by_materials || false,
+          blocked_stages: order.blocked_stages || []
+        };
+        
+        // Отладочная информация
+        console.log(`Заказ ${order.id}: stage=${stage}, branches=${JSON.stringify(branches)}`);
+        
+        kanbanData.columns[columnIndex].cards.push(card);
+        
+        // Отмечаем заказ как обработанный
+        processedOrders.set(order.id, true);
+      }
+    });
+    
+    res.json(kanbanData);
+  } catch (error) {
+    console.error('Ошибка получения данных канбана:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Обновление этапа производства заказа в канбане
+router.put('/kanban/:orderId/stage', authenticateToken, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { stage } = req.body;
+    
+    if (!stage) {
+      return res.status(400).json({ message: 'Этап производства не указан' });
+    }
+    
+    const validStages = ['КБ', 'Столярный цех', 'Формовка', 'Швейный цех', 'Обивка', 'Сборка и упаковка', 'Отгружен'];
+    if (!validStages.includes(stage)) {
+      return res.status(400).json({ message: 'Недопустимый этап производства' });
+    }
+    
+    // Проверяем блокировки материалов для этапа
+    const stageMapping = {
+      'Столярный цех': 'frame',
+      'Швейный цех': 'upholstery', 
+      'Формовка': 'foam_molding',
+      'Сборка и упаковка': 'assembly'
+    };
+    
+    const mappedStage = stageMapping[stage];
+    if (mappedStage) {
+      // Проверяем материалы для этапа
+      const materialsResult = await db.query(
+        'SELECT * FROM check_materials_for_stage($1, $2)',
+        [orderId, mappedStage]
+      );
+      
+      const blockedMaterials = materialsResult.rows.filter(m => m.is_blocked);
+      if (blockedMaterials.length > 0) {
+        return res.status(400).json({
+          message: `Заказ заблокирован из-за нехватки материалов для этапа "${stage}"`,
+          blockedMaterials: blockedMaterials.map(m => ({
+            material: m.material_name,
+            required: m.required_quantity,
+            available: m.available_quantity,
+            missing: m.missing_quantity,
+            unit: m.unit
+          }))
+        });
+      }
+    }
+    
+    const client = await db.pool.connect();
+    
+    await client.query('BEGIN');
+    
+    // Проверяем, есть ли активная операция для заказа
+    const existingOperation = await client.query(`
+      SELECT id FROM production_operations 
+      WHERE order_id = $1 AND status = 'in_progress' AND operation_type = 'produce'
+    `, [orderId]);
+    
+    if (existingOperation.rows.length > 0) {
+      // Обновляем существующую операцию
+      await client.query(`
+        UPDATE production_operations 
+        SET production_stage = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE order_id = $2 AND status = 'in_progress' AND operation_type = 'produce'
+      `, [stage, orderId]);
+    } else {
+      // Создаем новую операцию для заказа
+      await client.query(`
+        INSERT INTO production_operations (order_id, operation_type, production_stage, status, created_by)
+        VALUES ($1, 'produce', $2, 'in_progress', $3)
+      `, [orderId, stage, req.user.id]);
+    }
+    
+    // Если заказ переходит в "Отгружен", обновляем статус заказа
+    if (stage === 'Отгружен') {
+      await client.query(`
+        UPDATE orders 
+        SET status = 'shipped', updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+      `, [orderId]);
+      
+      // Добавляем запись в историю статусов
+      await client.query(`
+        INSERT INTO order_status_history (order_id, status, comment, created_by)
+        VALUES ($1, $2, $3, $4)
+      `, [orderId, 'shipped', `Заказ отгружен`, req.user.id]);
+    }
+    
+    await client.query('COMMIT');
+    client.release();
+    
+    res.json({ message: 'Этап производства обновлен успешно' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Ошибка обновления этапа производства:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Получение всех заказов с фильтрацией и пагинацией
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    const { 
+      page = 1, 
+      limit = 20, 
+      status, 
+      customer_id, 
+      priority,
+      search,
+      sort_by = 'created_at',
+      sort_order = 'desc'
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+    let whereConditions = [];
+    let queryParams = [];
+    let paramCount = 0;
+
+    // Всегда исключаем удаленные заказы (статус 'cancelled')
+    whereConditions.push(`o.status != 'cancelled'`);
+
+    // Фильтры
+    if (status) {
+      paramCount++;
+      whereConditions.push(`o.status = $${paramCount}`);
+      queryParams.push(status);
+    }
+
+    if (customer_id) {
+      paramCount++;
+      whereConditions.push(`o.customer_id = $${paramCount}`);
+      queryParams.push(customer_id);
+    }
+
+    if (priority) {
+      paramCount++;
+      whereConditions.push(`o.priority = $${paramCount}`);
+      queryParams.push(priority);
+    }
+
+    if (search) {
+      paramCount++;
+      whereConditions.push(`(o.order_number ILIKE $${paramCount} OR c.name ILIKE $${paramCount})`);
+      queryParams.push(`%${search}%`);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Подсчет общего количества
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM orders o
+      LEFT JOIN customers c ON o.customer_id = c.id
+      ${whereClause}
+    `;
+    const countResult = await db.query(countQuery, queryParams);
+    const total = parseInt(countResult.rows[0].total);
+
+    // Получение заказов
+    paramCount++;
+    const ordersQuery = `
+      SELECT 
+        o.*,
+        c.name as customer_name,
+        c.email as customer_email,
+        c.phone as customer_phone,
+        u.name as created_by_name,
+        (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as items_count,
+        CASE 
+          WHEN o.source = 'calc' THEN 'calc'
+          ELSE 'crm'
+        END as order_source
+      FROM orders o
+      LEFT JOIN customers c ON o.customer_id = c.id
+      LEFT JOIN users u ON o.created_by = u.id
+      ${whereClause}
+      ORDER BY o.${sort_by} ${sort_order.toUpperCase()}
+      LIMIT $${paramCount} OFFSET $${paramCount + 1}
+    `;
+    queryParams.push(limit, offset);
+
+    const ordersResult = await db.query(ordersQuery, queryParams);
+
+    res.json({
+      orders: ordersResult.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Ошибка получения заказов:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Получение заказа по ID или order_number
+router.get('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Определяем, является ли id числом или строкой (order_number)
+    const isNumericId = /^\d+$/.test(id);
+    
+    // Получаем заказ
+    let orderResult;
+    if (isNumericId) {
+      orderResult = await db.query(`
+        SELECT 
+          o.*,
+          c.name as customer_name,
+          c.email as customer_email,
+          c.phone as customer_phone,
+          c.company as customer_company,
+          c.address as customer_address,
+          u.name as created_by_name
+        FROM orders o
+        LEFT JOIN customers c ON o.customer_id = c.id
+        LEFT JOIN users u ON o.created_by = u.id
+        WHERE o.id = $1
+      `, [id]);
+    } else {
+      orderResult = await db.query(`
+        SELECT 
+          o.*,
+          c.name as customer_name,
+          c.email as customer_email,
+          c.phone as customer_phone,
+          c.company as customer_company,
+          c.address as customer_address,
+          u.name as created_by_name
+        FROM orders o
+        LEFT JOIN customers c ON o.customer_id = c.id
+        LEFT JOIN users u ON o.created_by = u.id
+        WHERE o.order_number = $1
+      `, [id]);
+    }
+
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Заказ не найден' });
+    }
+
+    const order = orderResult.rows[0];
+
+    // Получаем позиции заказа
+    const itemsResult = await db.query(`
+      SELECT * FROM order_items WHERE order_id = $1 ORDER BY id
+    `, [id]);
+
+    // Получаем историю статусов
+    const statusHistoryResult = await db.query(`
+      SELECT 
+        osh.*,
+        u.name as created_by_name
+      FROM order_status_history osh
+      LEFT JOIN users u ON osh.created_by = u.id
+      WHERE osh.order_id = $1
+      ORDER BY osh.created_at DESC
+    `, [id]);
+
+    order.items = itemsResult.rows;
+    order.status_history = statusHistoryResult.rows;
+
+    res.json({ order });
+  } catch (error) {
+    console.error('Ошибка получения заказа:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Создание нового заказа
+router.post('/', authenticateToken, async (req, res) => {
+  console.log('🔄 POST /api/orders - создание заказа - НАЧАЛО');
+  console.log('📋 Данные запроса:', req.body);
+  console.log('👤 Пользователь:', req.user);
+  
+  const client = await db.pool.connect();
+  let finalCustomerId = null; // Объявляем переменную в области видимости функции
+  
+  // Объявляем все переменные в области видимости функции
+  let product_name, status, priority, delivery_date, notes, items, total_amount, prepayment_amount, paid_amount;
+  let customer_id, customer_name, customer_phone, customer_email, customer_company;
+  let order = null; // Объявляем переменную order в области видимости функции
+  
+  try {
+    await client.query('BEGIN');
+
+    const { error, value } = orderSchema.validate(req.body);
+    if (error) {
+      console.error('❌ Ошибка валидации:', error.details[0].message);
+      return res.status(400).json({ message: error.details[0].message });
+    }
+    
+    console.log('✅ Валидация прошла успешно');
+
+    // Присваиваем значения переменным клиента
+    customer_id = value.customer_id;
+    customer_name = value.customer_name;
+    customer_phone = value.customer_phone;
+    customer_email = value.customer_email;
+    customer_company = value.customer_company;
+
+    const { 
+      delivery_address, has_elevator, floor, delivery_notes,
+      calculator_data
+    } = value;
+
+    // Присваиваем значения переменным
+    product_name = value.product_name;
+    status = value.status;
+    priority = value.priority;
+    delivery_date = value.delivery_date;
+    notes = value.notes;
+    items = value.items;
+    total_amount = value.total_amount;
+    prepayment_amount = value.prepayment_amount;
+    paid_amount = value.paid_amount;
+
+    // Обрабатываем клиента - создаем или находим существующего
+    finalCustomerId = null;
+    console.log('🔍 Данные клиента:', { customer_id, customer_name, customer_phone, customer_email });
+    
+    // Если передан customer_id, проверяем его существование
+    if (customer_id) {
+      const existingCustomer = await client.query('SELECT id FROM customers WHERE id = $1', [customer_id]);
+      if (existingCustomer.rows.length > 0) {
+        finalCustomerId = customer_id;
+        console.log('✅ Используем существующего клиента, ID:', finalCustomerId);
+      } else {
+        console.log('❌ Клиент с ID', customer_id, 'не существует');
+      }
+    }
+    
+    // Если клиент не найден, ищем или создаем нового
+    if (!finalCustomerId) {
+      console.log('🔍 Ищем или создаем клиента...');
+      
+      // Ищем по email
+      if (customer_email && customer_email.trim()) {
+        const existingByEmail = await client.query(
+          'SELECT id FROM customers WHERE email = $1',
+          [customer_email.trim()]
+        );
+        if (existingByEmail.rows.length > 0) {
+          finalCustomerId = existingByEmail.rows[0].id;
+          console.log('✅ Найден клиент по email, ID:', finalCustomerId);
+        }
+      }
+      
+      // Ищем по телефону
+      if (!finalCustomerId && customer_phone && customer_phone.trim()) {
+        const existingByPhone = await client.query(
+          'SELECT id FROM customers WHERE phone = $1',
+          [customer_phone.trim()]
+        );
+        if (existingByPhone.rows.length > 0) {
+          finalCustomerId = existingByPhone.rows[0].id;
+          console.log('✅ Найден клиент по телефону, ID:', finalCustomerId);
+        }
+      }
+      
+      // Если клиент не найден, создаем нового
+      if (!finalCustomerId && customer_name) {
+        console.log('🔍 Создаем нового клиента...');
+        const newCustomer = await client.query(`
+          INSERT INTO customers (name, email, phone, company, status, created_by)
+          VALUES ($1, $2, $3, $4, 'active', $5)
+          RETURNING id
+        `, [
+          customer_name || 'Новый клиент',
+          customer_email && customer_email.trim() ? customer_email.trim() : null,
+          customer_phone && customer_phone.trim() ? customer_phone.trim() : null,
+          customer_company || null,
+          req.user?.id || 1
+        ]);
+        finalCustomerId = newCustomer.rows[0].id;
+        console.log('✅ Создан новый клиент, ID:', finalCustomerId);
+      }
+    }
+    
+    console.log('🔍 Финальный ID клиента:', finalCustomerId);
+    if (!finalCustomerId) {
+      return res.status(400).json({ message: 'Необходимо указать данные клиента' });
+    }
+    
+    console.log('👤 Обработан клиент, ID:', finalCustomerId);
+
+    // Генерируем уникальный номер заказа
+    const orderNumber = await generateOrderNumber(client);
+
+    // Создаем заказ
+    const orderResult = await client.query(`
+      INSERT INTO orders (
+        order_number, customer_id, product_name, status, priority, notes, created_by,
+        total_amount, paid_amount
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *
+    `, [
+      orderNumber, finalCustomerId, product_name || '', status, priority, notes || '', parseInt(req.user?.id || 1),
+      parseFloat(total_amount) || 0, parseFloat(prepayment_amount || paid_amount) || 0
+    ]);
+
+    const order = orderResult.rows[0];
+    console.log('✅ Заказ создан, ID:', order.id);
+
+    // Добавляем позиции заказа
+    let totalAmount = 0;
+    console.log('🔍 Добавляем позиции заказа, количество:', items.length);
+    for (const item of items) {
+      const totalPrice = item.quantity * item.unit_price;
+      totalAmount += totalPrice;
+      console.log('🔍 Добавляем позицию:', item.name, 'цена:', totalPrice);
+
+      await client.query(`
+        INSERT INTO order_items (order_id, name, description, quantity, unit_price, total_price)
+        VALUES ($1, $2, $3, $4, $5, $6)
+      `, [order.id, item.name, item.description || '', item.quantity, item.unit_price, totalPrice]);
+    }
+    console.log('✅ Позиции заказа добавлены, общая сумма:', totalAmount);
+
+    // Обновляем общую сумму заказа
+    await client.query(`
+      UPDATE orders SET total_amount = $1 WHERE id = $2
+    `, [totalAmount, order.id]);
+
+    // Пропускаем добавление в историю статусов для упрощения
+    console.log('✅ Пропускаем добавление в историю для заказа ID:', order.id);
+
+    // Временно отключаем генерацию QR-кода для отладки
+    console.log('🔍 Пропускаем генерацию QR-кода для отладки');
+
+    console.log('🔍 Коммитим транзакцию...');
+    await client.query('COMMIT');
+    console.log('✅ Транзакция закоммичена');
+
+    console.log('🔍 Отправляем ответ...');
+    res.status(201).json({
+      message: 'Заказ успешно создан',
+      order: { ...order, total_amount: totalAmount }
+    });
+    console.log('✅ Ответ отправлен');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Ошибка создания заказа:', error);
+    
+    // Упрощенная обработка ошибок
+    if (error.code === '23505') {
+      console.log('Дублирование номера заказа, генерируем новый');
+      const newOrderNumber = `SOF-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      
+      try {
+        await client.query('BEGIN');
+        
+        // Создаем заказ с новым номером
+        const orderResult = await client.query(`
+          INSERT INTO orders (
+            order_number, customer_id, product_name, status, priority, notes, created_by,
+            total_amount, paid_amount
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          RETURNING *
+        `, [
+          newOrderNumber, finalCustomerId, product_name || '', status, priority, notes || '', parseInt(req.user?.id || 1),
+          parseFloat(total_amount) || 0, parseFloat(prepayment_amount || paid_amount) || 0
+        ]);
+
+        const order = orderResult.rows[0];
+
+        // Добавляем позиции заказа
+        let totalAmount = 0;
+        for (const item of items) {
+          const totalPrice = item.quantity * item.unit_price;
+          totalAmount += totalPrice;
+
+          await client.query(`
+            INSERT INTO order_items (order_id, name, description, quantity, unit_price, total_price)
+            VALUES ($1, $2, $3, $4, $5, $6)
+          `, [order.id, item.name, item.description, item.quantity, item.unit_price, totalPrice]);
+        }
+
+        // Обновляем общую сумму заказа
+        await client.query(`
+          UPDATE orders SET total_amount = $1 WHERE id = $2
+        `, [totalAmount, order.id]);
+
+        await client.query('COMMIT');
+
+        return res.status(201).json({
+          message: 'Заказ успешно создан с новым номером',
+          order: order,
+          warning: 'Номер заказа был изменен из-за дублирования'
+        });
+        
+      } catch (retryError) {
+        await client.query('ROLLBACK');
+        console.error('Ошибка создания заказа с новым номером:', retryError);
+        return res.status(500).json({ 
+          message: 'Не удалось создать заказ',
+          error: 'CREATE_FAILED',
+          details: retryError.message
+        });
+      }
+    } // Конец обработки ошибки создания заказа
+  } finally {
+    client.release();
+  }
+});
+
+// GET /api/orders/:id - получить заказ по ID
+      try {
+        await client.query('BEGIN');
+        
+        // Генерируем новый уникальный номер
+        const fallbackNumber = `SOF-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+        console.log('Используем fallback номер:', fallbackNumber);
+        console.log('👤 Используем клиента ID:', finalCustomerId);
+        
+        // Проверяем, что клиент существует в retry логике
+        const customerCheck = await client.query('SELECT id FROM customers WHERE id = $1', [finalCustomerId]);
+        if (customerCheck.rows.length === 0) {
+          console.log('❌ В retry: клиент с ID', finalCustomerId, 'не существует, создаем нового');
+          const newCustomer = await client.query(`
+            INSERT INTO customers (name, email, phone, company, status, created_by)
+            VALUES ($1, $2, $3, $4, 'active', $5)
+            RETURNING id
+          `, [
+            customer_name || 'Новый клиент',
+            customer_email && customer_email.trim() ? customer_email.trim() : null,
+            customer_phone && customer_phone.trim() ? customer_phone.trim() : null,
+            customer_company || null,
+            req.user?.id || 1
+          ]);
+          finalCustomerId = newCustomer.rows[0].id;
+          console.log('✅ В retry: создан новый клиент, ID:', finalCustomerId);
+        }
+        
+        // Создаем заказ с новым номером
+        const orderResult = await client.query(`
+          INSERT INTO orders (
+            order_number, customer_id, product_name, status, priority, notes, created_by,
+            total_amount, paid_amount
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          RETURNING *
+        `, [
+          fallbackNumber, finalCustomerId, product_name || '', status, priority, notes || '', parseInt(req.user?.id || 1),
+          parseFloat(total_amount) || 0, parseFloat(prepayment_amount || paid_amount) || 0
+        ]);
+
+        order = orderResult.rows[0];
+
+        // Добавляем позиции заказа
+        let totalAmount = 0;
+        for (const item of items) {
+          const totalPrice = item.quantity * item.unit_price;
+          totalAmount += totalPrice;
+
+          await client.query(`
+            INSERT INTO order_items (order_id, name, description, quantity, unit_price, total_price)
+            VALUES ($1, $2, $3, $4, $5, $6)
+          `, [order.id, item.name, item.description, item.quantity, item.unit_price, totalPrice]);
+        }
+
+        // Обновляем общую сумму заказа
+        await client.query(`
+          UPDATE orders SET total_amount = $1 WHERE id = $2
+        `, [totalAmount, order.id]);
+
+        // Добавляем запись в историю статусов (проверяем, что запись не существует)
+        console.log('🔍 Проверяем историю для заказа ID:', order.id, 'статус:', status);
+        // В retry логике не добавляем запись в историю, так как она уже добавлена в основной логике
+        console.log('✅ Пропускаем добавление в историю для retry заказа ID:', order.id);
+
+        // Генерируем QR код
+        const qrData = {
+          order_id: order.id,
+          order_number: order.order_number,
+          timestamp: Math.floor(Date.now() / 1000)
+        };
+
+        const qrCodeData = JSON.stringify(qrData);
+        const expiresAt = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // 30 дней
+
+        const qrResult = await client.query(`
+          INSERT INTO order_qr_codes (order_id, qr_code, expires_at)
+          VALUES ($1, $2, $3)
+          RETURNING id
+        `, [order.id, qrCodeData, expiresAt]);
+
+        // Обновляем заказ с ID QR кода
+        await client.query(`
+          UPDATE orders SET qr_code_id = $1 WHERE id = $2
+        `, [qrResult.rows[0].id, order.id]);
+
+        await client.query('COMMIT');
+
+        return res.status(201).json({
+          message: 'Заказ успешно создан с новым номером',
+          order: { ...order, qr_code_id: qrResult.rows[0].id },
+          warning: 'Номер заказа был изменен из-за дублирования'
+        });
+        
+      } catch (retryError) {
+        await client.query('ROLLBACK');
+        console.error('Ошибка retry создания заказа:', retryError);
+        console.error('Детали ошибки:', retryError.message);
+        console.error('Код ошибки:', retryError.code);
+        return res.status(500).json({ 
+          message: 'Не удалось создать заказ даже с новым номером',
+          error: 'RETRY_FAILED',
+          details: retryError.message
+        });
+      }
+    } else if (error.code === '23503') {
+      res.status(400).json({ 
+        message: 'Указанный клиент не найден',
+        error: 'CUSTOMER_NOT_FOUND'
+      });
+    } else {
+      res.status(500).json({ 
+        message: 'Ошибка сервера',
+        error: error.message
+      });
+    }
+  } finally {
+    client.release();
+  }
+});
+
+// Обновление статуса заказа (простой эндпоинт)
+router.put('/:id/status', authenticateToken, async (req, res) => {
+  const client = await db.pool.connect();
+  
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ message: 'Статус не указан' });
+    }
+
+    // Проверяем существование заказа
+    const existingOrder = await client.query('SELECT * FROM orders WHERE id = $1', [id]);
+    if (existingOrder.rows.length === 0) {
+      return res.status(404).json({ message: 'Заказ не найден' });
+    }
+
+    // Обновляем только статус
+    const result = await client.query(`
+      UPDATE orders 
+      SET status = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+      RETURNING *
+    `, [status, id]);
+
+    // Если статус меняется на "in_production", создаем операцию производства
+    if (status === 'in_production') {
+      try {
+        await client.query(`
+          INSERT INTO production_operations (
+            order_id, operation_type, production_stage, status
+          )
+          VALUES ($1, $2, $3, $4)
+        `, [id, 'produce', 'КБ', 'in_progress']);
+      } catch (productionError) {
+        console.warn('Не удалось создать операцию производства:', productionError);
+        // Не прерываем выполнение, так как статус уже обновлен
+      }
+    }
+
+    res.json({
+      message: 'Статус заказа обновлен',
+      order: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Ошибка обновления статуса заказа:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  } finally {
+    client.release();
+  }
+});
+
+// Обновление заказа
+router.put('/:id', authenticateToken, async (req, res) => {
+  const client = await db.pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    const { id } = req.params;
+    const { 
+      status, 
+      priority, 
+      delivery_date, 
+      notes, 
+      paid_amount,
+      total_amount,
+      prepayment_amount,
+      delivery_address,
+      has_elevator,
+      floor,
+      delivery_notes,
+      project_description,
+      calculator_data,
+      items
+    } = req.body;
+
+    // Проверяем существование заказа
+    const existingOrder = await client.query('SELECT * FROM orders WHERE id = $1', [id]);
+    if (existingOrder.rows.length === 0) {
+      return res.status(404).json({ message: 'Заказ не найден' });
+    }
+
+    const currentOrder = existingOrder.rows[0];
+
+    // Логирование для отладки
+    console.log('🔄 Обновление заказа:', {
+      id,
+      status,
+      priority,
+      delivery_date,
+      total_amount,
+      prepayment_amount
+    });
+    console.log('📋 Полные данные запроса:', req.body);
+
+    // Обновление заказа с простым SQL запросом
+    const result = await client.query(`
+      UPDATE orders 
+      SET 
+        status = COALESCE($1, orders.status),
+        priority = COALESCE($2, orders.priority),
+        delivery_date = COALESCE($3, orders.delivery_date),
+        notes = COALESCE($4, orders.notes),
+        paid_amount = COALESCE($5, orders.paid_amount),
+        total_amount = COALESCE($6, orders.total_amount),
+        delivery_address = COALESCE($7, orders.delivery_address),
+        has_elevator = COALESCE($8, orders.has_elevator),
+        floor = COALESCE($9, orders.floor),
+        delivery_notes = COALESCE($10, orders.delivery_notes),
+      project_description = COALESCE($11, orders.project_description),
+        calculator_data = COALESCE($12, orders.calculator_data),
+      updated_at = CURRENT_TIMESTAMP
+      WHERE id = $13
+      RETURNING *
+    `, [
+      status || null, 
+      priority || null, 
+      delivery_date || null, 
+      notes || null, 
+      paid_amount || null,
+      total_amount || null,
+      delivery_address || null,
+      has_elevator !== undefined ? has_elevator : null,
+      floor || null,
+      delivery_notes || null,
+      project_description || null,
+      calculator_data ? JSON.stringify(calculator_data) : null,
+      id
+    ]);
+
+    // Обновляем позиции заказа если они переданы
+    if (items && Array.isArray(items)) {
+      // Удаляем старые позиции
+      await client.query('DELETE FROM order_items WHERE order_id = $1', [id]);
+      
+      // Добавляем новые позиции
+      for (const item of items) {
+        await client.query(`
+          INSERT INTO order_items (order_id, name, description, quantity, unit_price, total_price)
+          VALUES ($1, $2, $3, $4, $5, $6)
+        `, [
+          id,
+          item.name,
+          item.description || '',
+          item.quantity || 1,
+          item.unit_price || 0,
+          (item.quantity || 1) * (item.unit_price || 0)
+        ]);
+      }
+    }
+
+    // Если статус изменился, добавляем в историю
+    if (status && status !== currentOrder.status) {
+      await client.query(`
+        INSERT INTO order_status_history (order_id, status, comment, created_by)
+        VALUES ($1, $2, $3, $4)
+      `, [id, status, 'Статус изменен', req.user.id]);
+    }
+
+    await client.query('COMMIT');
+
+    res.json({
+      message: 'Заказ обновлен',
+      order: result.rows[0]
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Ошибка обновления заказа:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  } finally {
+    client.release();
+  }
+});
+
+// Обновление данных клиента
+router.put('/:id/customer', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, phone, email, company } = req.body;
+
+    // Проверяем существование заказа
+    const existingOrder = await db.query('SELECT * FROM orders WHERE id = $1', [id]);
+    if (existingOrder.rows.length === 0) {
+      return res.status(404).json({ message: 'Заказ не найден' });
+    }
+
+    const order = existingOrder.rows[0];
+
+    // Обновляем данные клиента
+    const result = await db.query(`
+      UPDATE customers 
+      SET 
+        name = COALESCE($1, name),
+        phone = COALESCE($2, phone),
+        email = COALESCE($3, email),
+        company = COALESCE($4, company),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $5
+      RETURNING *
+    `, [name, phone, email, company, order.customer_id]);
+
+    res.json({ message: 'Данные клиента обновлены', customer: result.rows[0] });
+  } catch (error) {
+    console.error('Ошибка обновления клиента:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Удаление заказа (мягкое удаление - помечаем как удаленный)
+router.delete('/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Проверяем, существует ли заказ
+    const orderCheck = await db.query('SELECT id, status FROM orders WHERE id = $1', [id]);
+    if (orderCheck.rows.length === 0) {
+      return res.status(404).json({ message: 'Заказ не найден' });
+    }
+
+    // Мягкое удаление - помечаем заказ как удаленный
+    const result = await db.query(
+      'UPDATE orders SET status = $1, notes = COALESCE(notes, \'\') || \' [УДАЛЕН]\' WHERE id = $2 RETURNING *', 
+      ['cancelled', id]
+    );
+
+    res.json({ message: 'Заказ удален' });
+  } catch (error) {
+    console.error('Ошибка удаления заказа:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Получение статистики заказов
+router.get('/stats/overview', authenticateToken, async (req, res) => {
+  try {
+    const { period = '30' } = req.query; // дней
+
+    const statsResult = await db.query(`
+      SELECT 
+        COUNT(*) as total_orders,
+        COUNT(CASE WHEN status = 'new' THEN 1 END) as new_orders,
+        COUNT(CASE WHEN status = 'in_production' AND (production_status = 'in_progress' OR production_status IS NULL) THEN 1 END) as in_production,
+        COUNT(CASE WHEN status = 'in_sewing' THEN 1 END) as in_sewing,
+        COUNT(CASE WHEN status = 'ready' THEN 1 END) as ready,
+        COUNT(CASE WHEN status = 'delivered' THEN 1 END) as delivered,
+        COUNT(CASE WHEN priority = 'high' OR priority = 'urgent' THEN 1 END) as urgent_orders,
+        COALESCE(SUM(total_amount), 0) as total_revenue,
+        COALESCE(SUM(paid_amount), 0) as total_paid,
+        COALESCE(AVG(total_amount), 0) as avg_order_value
+      FROM orders 
+      WHERE created_at >= CURRENT_DATE - INTERVAL '${period} days'
+    `);
+
+    res.json({ stats: statsResult.rows[0] });
+  } catch (error) {
+    console.error('Ошибка получения статистики:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// Endpoints для работы с чертежами
+
+// GET /api/orders/:id/drawings - получить список чертежей заказа
+router.get('/:id/drawings', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await db.query(
+      'SELECT id, file_name, file_type, file_size, created_at FROM order_drawings WHERE order_id = $1 ORDER BY created_at DESC',
+      [id]
+    );
+    
+    res.json({ files: result.rows });
+  } catch (error) {
+    console.error('Ошибка получения чертежей:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// POST /api/orders/:id/drawings - загрузить чертеж
+router.post('/:id/drawings', authenticateToken, upload.single('drawing'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const file = req.file;
+    
+    if (!file) {
+      return res.status(400).json({ message: 'Файл не предоставлен' });
+    }
+    
+    // Имя файла уже исправлено в fileFilter
+    const fileName = file.originalname;
+    
+    const result = await db.query(
+      'INSERT INTO order_drawings (order_id, file_name, file_data, file_type, file_size, uploaded_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+      [id, fileName, file.buffer, file.mimetype, file.size, req.user.id]
+    );
+    
+    res.json({ 
+      message: 'Чертеж загружен успешно',
+      drawing: {
+        id: result.rows[0].id,
+        file_name: fileName,
+        file_type: file.mimetype,
+        file_size: file.size
+      }
+    });
+  } catch (error) {
+    console.error('Ошибка загрузки чертежа:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// GET /api/orders/:id/drawings/:drawingId - получить чертеж
+router.get('/:id/drawings/:drawingId', authenticateToken, async (req, res) => {
+  try {
+    const { id, drawingId } = req.params;
+    
+    const result = await db.query(
+      'SELECT file_name, file_data, file_type FROM order_drawings WHERE id = $1 AND order_id = $2',
+      [drawingId, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Чертеж не найден' });
+    }
+    
+    const drawing = result.rows[0];
+    
+    res.set({
+      'Content-Type': drawing.file_type,
+      'Content-Disposition': `attachment; filename="${drawing.file_name}"`,
+      'Content-Length': drawing.file_data.length
+    });
+    
+    res.send(drawing.file_data);
+  } catch (error) {
+    console.error('Ошибка получения чертежа:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// DELETE /api/orders/:id/drawings/:drawingId - удалить чертеж
+router.delete('/:id/drawings/:drawingId', authenticateToken, async (req, res) => {
+  try {
+    const { id, drawingId } = req.params;
+    
+    const result = await db.query(
+      'DELETE FROM order_drawings WHERE id = $1 AND order_id = $2 RETURNING file_name',
+      [drawingId, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Чертеж не найден' });
+    }
+    
+    res.json({ message: 'Чертеж удален успешно' });
+  } catch (error) {
+    console.error('Ошибка удаления чертежа:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+module.exports = router;
+
+
+
+
+
+
+// GET /api/orders/:id/drawings/:drawingId - получить чертеж
+router.get('/:id/drawings/:drawingId', authenticateToken, async (req, res) => {
+  try {
+    const { id, drawingId } = req.params;
+    
+    const result = await db.query(
+      'SELECT file_name, file_data, file_type FROM order_drawings WHERE id = $1 AND order_id = $2',
+      [drawingId, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Чертеж не найден' });
+    }
+    
+    const drawing = result.rows[0];
+    
+    res.set({
+      'Content-Type': drawing.file_type,
+      'Content-Disposition': `attachment; filename="${drawing.file_name}"`,
+      'Content-Length': drawing.file_data.length
+    });
+    
+    res.send(drawing.file_data);
+  } catch (error) {
+    console.error('Ошибка получения чертежа:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+// DELETE /api/orders/:id/drawings/:drawingId - удалить чертеж
+router.delete('/:id/drawings/:drawingId', authenticateToken, async (req, res) => {
+  try {
+    const { id, drawingId } = req.params;
+    
+    const result = await db.query(
+      'DELETE FROM order_drawings WHERE id = $1 AND order_id = $2 RETURNING file_name',
+      [drawingId, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Чертеж не найден' });
+    }
+    
+    res.json({ message: 'Чертеж удален успешно' });
+  } catch (error) {
+    console.error('Ошибка удаления чертежа:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+});
+
+module.exports = router;
+

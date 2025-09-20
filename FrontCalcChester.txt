@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор кожи для дивана Честерфилд - подсчет стоимости и расхода | Sofany Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0ea5a5;
+            --primary-dark: #0b8f8f;
+            --primary-light: #e0f7f7;
+            --secondary: #ff6b6b;
+            --secondary-light: #ffeaea;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --purple: #8b5cf6;
+            --pink: #ec4899;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-card: 0 10px 25px -5px rgba(14, 165, 165, 0.15);
+            --gradient-primary: linear-gradient(135deg, #0ea5a5 0%, #0b8f8f 100%);
+            --gradient-secondary: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow-card);
+            padding: 20px 0;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            font-size: 28px;
+            color: var(--primary-dark);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo span {
+            font-weight: 800;
+            color: var(--text);
+        }
+        
+        /* Заголовок страницы - выровнен по центру, без иконки */
+        .page-title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 30px;
+            padding: 0 20px;
+        }
+        
+        /* Основной контент с golden ratio columns */
+        .main-content {
+            display: flex;
+            gap: 30px;
+            flex: 1;
+            align-items: stretch;
+        }
+        
+        .input-column {
+            flex: 0 0 38.2%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .result-column {
+            flex: 0 0 61.8%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .input-column,
+            .result-column {
+                flex: 1;
+            }
+        }
+        
+        /* Card styles */
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow-card);
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px -12px rgba(14, 165, 165, 0.25);
+        }
+        
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary-light);
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title i {
+            margin-right: 12px;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        /* Form elements */
+        .form-group {
+            margin-bottom: 22px;
+            position: relative;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text);
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .form-label i {
+            margin-right: 8px;
+            color: var(--primary);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 16px 18px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: var(--card-bg);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .form-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 4px var(--primary-light);
+        }
+        
+        .form-hint {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            padding-left: 26px;
+        }
+        
+        /* Button */
+        .btn-calculate {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 18px 25px;
+            width: 100%;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 10px 20px rgba(14, 165, 165, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-calculate:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(255, 255, 255, 0.2), transparent);
+            transform: translateY(100%);
+            transition: transform 0.3s;
+        }
+        
+        .btn-calculate:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(14, 165, 165, 0.4);
+        }
+        
+        .btn-calculate:hover:before {
+            transform: translateY(0);
+        }
+        
+        .btn-calculate i {
+            margin-right: 12px;
+            font-size: 20px;
+        }
+        
+        /* Results */
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-light);
+            align-items: center;
+        }
+        
+        .result-label {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+        }
+        
+        .result-label i {
+            margin-right: 10px;
+            color: var(--primary);
+        }
+        
+        .result-value {
+            font-weight: 700;
+            color: var(--primary-dark);
+            font-size: 16px;
+        }
+        
+        .final-result {
+            background: var(--gradient-primary);
+            padding: 25px;
+            border-radius: 16px;
+            margin-top: 25px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 10px 20px rgba(14, 165, 165, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .final-result:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%230b8f8f' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+            opacity: 0.3;
+        }
+        
+        .final-label {
+            font-size: 18px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .final-value {
+            font-size: 32px;
+            font-weight: 800;
+            margin: 15px 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Новая визуализация шкур */
+        .hides-container {
+            margin: 25px 0;
+            background: var(--primary-light);
+            padding: 20px;
+            border-radius: 16px;
+        }
+        
+        .hides-title {
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .hides-title i {
+            margin-right: 10px;
+        }
+        
+        .hides-visualization {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        
+        .hide {
+            width: 80px;
+            height: 100px;
+            background: var(--primary);
+            border-radius: 40% 40% 35% 35%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(14, 165, 165, 0.3);
+            transition: transform 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .hide:hover {
+            transform: translateY(-5px);
+        }
+        
+        .hide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 100%);
+        }
+        
+        .hide.reserve {
+            background: var(--secondary);
+            border: 2px dashed white;
+            animation: pulse 2s infinite;
+        }
+        
+        .hide-number {
+            position: relative;
+            z-index: 2;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .hide-label {
+            text-align: center;
+            font-size: 12px;
+            margin-top: 8px;
+            color: var(--text);
+            font-weight: 600;
+        }
+        
+        /* Alerts */
+        .alert {
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .alert-warning {
+            background: #fffbeb;
+            border-left: 4px solid var(--warning);
+            color: #92400e;
+        }
+        
+        .alert-info {
+            background: #ecfdf5;
+            border-left: 4px solid var(--success);
+            color: #065f46;
+        }
+        
+        .alert i {
+            margin-right: 12px;
+            font-size: 20px;
+        }
+        
+        /* Cost section */
+        .cost-section {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow-card);
+            padding: 30px;
+            margin-top: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cost-section:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 150px;
+            height: 150px;
+            background: var(--primary-light);
+            border-radius: 0 0 0 100px;
+            z-index: 0;
+        }
+        
+        .cost-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            margin-bottom: 25px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .cost-value {
+            font-size: 42px;
+            font-weight: 900;
+            color: var(--primary);
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .cost-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 25px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .cost-detail-item {
+            background: var(--primary-light);
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .cost-detail-label {
+            font-size: 14px;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .cost-detail-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            padding: 30px 0;
+            margin-top: 50px;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .footer-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .footer-logo {
+            font-size: 22px;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .footer-text {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .cost-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-container {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .final-value {
+                font-size: 28px;
+            }
+            
+            .cost-value {
+                font-size: 36px;
+            }
+            
+            .hide {
+                width: 60px;
+                height: 80px;
+                font-size: 12px;
+            }
+        }
+        
+        /* Animation for results */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result-item {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* Custom range slider */
+        .range-container {
+            margin-top: 10px;
+        }
+        
+        .range-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--border);
+            outline: none;
+        }
+        
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(14, 165, 165, 0.4);
+        }
+        
+        .range-slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(14, 165, 165, 0.4);
+        }
+        
+        .range-values {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        
+        /* Выравнивание карточек по высоте */
+        .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-bottom {
+            margin-top: auto;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-container">
+            <a href="https://sofany.pro" class="logo">Sofany.<span>pro</span></a>
+        </div>
+    </header>
+    
+    <div class="container">
+        <h1 class="page-title">Калькулятор Честерфилд</h1>
+        
+        <div class="main-content">
+            <!-- Левая колонка - ввод данных -->
+            <div class="input-column">
+                <div class="card">
+                    <div class="card-content">
+                        <h2 class="card-title"><i class="fas fa-ruler-combined"></i> Параметры дивана</h2>
+                        
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-ruler-horizontal"></i>Длина дивана (мм)</label>
+                            <input type="number" class="form-input" id="length" value="1900" min="500" max="3000" oninput="calculateLeather()">
+                            <div class="range-container">
+                                <input type="range" class="range-slider" min="500" max="3000" value="1900" id="length-range" oninput="updateLength()">
+                                <div class="range-values">
+                                    <span>500 мм</span>
+                                    <span>3000 мм</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-ruler-vertical"></i>Ширина дивана (мм)</label>
+                            <input type="number" class="form-input" id="width" value="1100" min="500" max="2000" oninput="calculateLeather()">
+                            <div class="range-container">
+                                <input type="range" class="range-slider" min="500" max="2000" value="1100" id="width-range" oninput="updateWidth()">
+                                <div class="range-values">
+                                    <span>500 мм</span>
+                                    <span>2000 мм</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-arrows-alt-v"></i>Высота дивана (мм)</label>
+                            <input type="number" class="form-input" id="height" value="700" min="400" max="1200" oninput="calculateLeather()">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-chair"></i>Высота сиденья (мм)</label>
+                            <input type="number" class="form-input" id="seat-height" value="400" min="300" max="600" oninput="calculateLeather()">
+                        </div>
+                        
+                        <div class="form-group">
+                            <!-- Обновленная иконка для высоты опор -->
+                            <label class="form-label"><i class="fas fa-ruler-vertical"></i>Высота опор (мм)</label>
+                            <input type="number" class="form-input" id="leg-height" value="50" min="0" max="200" oninput="calculateLeather()">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-content">
+                        <h2 class="card-title"><i class="fas fa-leather"></i> Параметры кожи</h2>
+                        
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-square"></i>Средняя площадь одной шкуры (м²)</label>
+                            <input type="number" class="form-input" id="hide-area" value="4.5" min="2" max="8" step="0.1" oninput="calculateLeather()">
+                            <div class="form-hint">Обычно от 4 до 5 м² для крупной шкуры</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-exclamation-triangle"></i>Процент брака и сложных участков (%)</label>
+                            <input type="number" class="form-input" id="defect-rate" value="15" min="0" max="40" step="1" oninput="calculateLeather()">
+                            <div class="form-hint">Рекомендуется 10-20% в зависимости от качества кожи</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-crop-alt"></i>Коэффициент использования шкуры</label>
+                            <input type="number" class="form-input" id="utilization" value="0.7" min="0.5" max="0.9" step="0.05" oninput="calculateLeather()">
+                            <div class="form-hint">Учитывает форму шкуры (0.6-0.8, где 0.7 - стандарт)</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-tag"></i>Цена за м² кожи (₽)</label>
+                            <input type="number" class="form-input" id="price" value="3500" min="100" max="10000" step="100" oninput="calculateLeather()">
+                        </div>
+                    </div>
+                    <div class="card-bottom">
+                        <button class="btn-calculate" onclick="calculateLeather()">
+                            <i class="fas fa-calculator"></i> Рассчитать
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Правая колонка - результаты -->
+            <div class="result-column">
+                <div class="card">
+                    <div class="card-content">
+                        <h2 class="card-title"><i class="fas fa-chart-pie"></i> Результаты расчета</h2>
+                        
+                        <div class="result-item">
+                            <span class="result-label"><i class="fas fa-backward"></i>Площадь спинки:</span>
+                            <span class="result-value" id="back-area">0 м²</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label"><i class="fas fa-couch"></i>Площадь сиденья:</span>
+                            <span class="result-value" id="seat-area">0 м²</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label"><i class="fas fa-hand-paper"></i>Площадь подлокотников:</span>
+                            <span class="result-value" id="arm-area">0 м²</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label"><i class="fas fa-border-style"></i>Площадь царги:</span>
+                            <span class="result-value" id="apron-area">0 м²</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label"><i class="fas fa-layer-group"></i>Площадь задней стенки:</span>
+                            <span class="result-value" id="back-wall-area">0 м²</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label"><i class="fas fa-calculator"></i>Общая чистая площадь:</span>
+                            <span class="result-value" id="net-area">0 м²</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label"><i class="fas fa-plus-circle"></i>Площадь с учетом запаса (15%):</span>
+                            <span class="result-value" id="total-net-area">0 м²</span>
+                        </div>
+                        
+                        <div class="final-result">
+                            <div class="final-label">Рекомендуемое количество шкур:</div>
+                            <div class="final-value" id="final-hides">0 шт.</div>
+                            <div>Общая площадь: <span id="total-area">0 м²</span></div>
+                        </div>
+                        
+                        <div class="hides-container">
+                            <div class="hides-title">
+                                <i class="fas fa-puzzle-piece"></i>Визуализация шкур:
+                            </div>
+                            <div class="hides-visualization" id="hides-visualization">
+                                <!-- Визуализация шкур будет добавлена через JS -->
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning" id="warning" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span id="warning-text"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="cost-section">
+                    <h2 class="cost-title">СЕБЕСТОИМОСТЬ МАТЕРИАЛА</h2>
+                    <div class="cost-value" id="cost-value">0 ₽</div>
+                    
+                    <div class="cost-details">
+                        <div class="cost-detail-item">
+                            <div class="cost-detail-label">Площадь кожи</div>
+                            <div class="cost-detail-value" id="cost-area">0 м²</div>
+                        </div>
+                        <div class="cost-detail-item">
+                            <div class="cost-detail-label">Цена за м²</div>
+                            <div class="cost-detail-value" id="cost-price">0 ₽</div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Расчет включает дополнительную шкуру на случай непредвиденного брака
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-logo">Sofany.pro</div>
+            <div class="footer-text">© 2025 Калькулятор расхода кожи. Все права защищены.</div>
+        </div>
+    </footer>
+
+    <script>
+        function updateLength() {
+            const rangeValue = document.getElementById('length-range').value;
+            document.getElementById('length').value = rangeValue;
+            calculateLeather();
+        }
+        
+        function updateWidth() {
+            const rangeValue = document.getElementById('width-range').value;
+            document.getElementById('width').value = rangeValue;
+            calculateLeather();
+        }
+        
+        function calculateLeather() {
+            // Получаем значения из формы
+            const L = parseFloat(document.getElementById('length').value) / 1000; // в метрах
+            const W = parseFloat(document.getElementById('width').value) / 1000;
+            const H = parseFloat(document.getElementById('height').value) / 1000;
+            const H_s = parseFloat(document.getElementById('seat-height').value) / 1000;
+            const H_op = parseFloat(document.getElementById('leg-height').value) / 1000;
+            
+            const avg_hide_area = parseFloat(document.getElementById('hide-area').value);
+            const defect_rate = parseFloat(document.getElementById('defect-rate').value) / 100;
+            const hide_utilization = parseFloat(document.getElementById('utilization').value);
+            const price_per_sqm = parseFloat(document.getElementById('price').value);
+            
+            // Обновляем значения ползунков
+            document.getElementById('length-range').value = document.getElementById('length').value;
+            document.getElementById('width-range').value = document.getElementById('width').value;
+            
+            // Проверяем корректность введенных данных
+            if (L <= 0 || W <= 0 || H <= 0 || H_s <= 0 || H_op < 0 || 
+                avg_hide_area <= 0 || defect_rate < 0 || hide_utilization <= 0 || price_per_sqm <= 0) {
+                return;
+            }
+            
+            // Расчет площади деталей (в квадратных метрах)
+            // Спинка (каретная стяжка +50%)
+            const back_area = L * (H - H_s) * 1.5;
+            
+            // Сиденье (2 подушки без стяжки +20% на припуски)
+            const seat_area = (W * L) * 1.2;
+            
+            // Подлокотники (2 шт, каретная стяжка +50%)
+            const arm_width = 0.25;  // Ширина подлокотника (250 мм)
+            const arm_length = H - H_op; // Высота подлокотника
+            const arm_area = 2 * (arm_width * arm_length) * 1.8;
+            
+            // Царга (+30% на припуски и сложность кроя)
+            const apron_perimeter = 2 * (L + W);
+            const apron_height = 0.15;  // Высота царги (150 мм)
+            const apron_area = (apron_perimeter * apron_height) * 1.3;
+            
+            // Задняя стенка (+20% на припуски)
+            const back_wall_area = L * (H - H_s) * 1.2;
+            
+            // Дополнительные элементы (боковины, декоративные детали)
+            const additional_area = (L * 0.1 + W * 0.1) * 1.5;
+            
+            // ИТОГО чистая площадь без запаса
+            const total_net_area = back_area + seat_area + arm_area + apron_area + back_wall_area + additional_area;
+            
+            // Запас на декоративные элементы и ошибки раскроя (15%)
+            const total_with_margin = total_net_area * 1.15;
+            
+            // Расчет с учетом реалий производства
+            const useful_hide_area = avg_hide_area * hide_utilization;
+            let number_of_hides = total_with_margin / useful_hide_area;
+            
+            // Накладываем процент брака на количество шкур
+            let number_of_hides_with_defects = number_of_hides * (1 + defect_rate);
+            
+            // НОВАЯ ЛОГИКА РАСЧЕТА ЗАПАСА
+            let reserve_hides = 0;
+            const calculated_hides = Math.ceil(number_of_hides_with_defects);
+            
+            if (calculated_hides <= 3) {
+                reserve_hides = 0;
+            } else if (calculated_hides <= 10) {
+                reserve_hides = 1;
+            } else {
+                // По 1 дополнительной шкуре на каждые 5 шкур
+                reserve_hides = 1 + Math.floor((calculated_hides - 10) / 5);
+            }
+            
+            const number_of_hides_final = calculated_hides + reserve_hides;
+            
+            // Пересчитываем итоговую площадь закупаемой кожи
+            const total_leather_area = number_of_hides_final * avg_hide_area;
+            
+            // Рассчитываем стоимость
+            const total_cost = total_leather_area * price_per_sqm;
+            
+            // Проверяем крупные детали
+            const max_piece_length = Math.max(L, W, (H - H_s));
+            let warning_text = "";
+            
+            if (max_piece_length > 1.8) {
+                warning_text = `ВНИМАНИЕ: Размер одной из деталей (${max_piece_length.toFixed(2)} м) очень велик. Раскрой может быть затруднен, необходим индивидуальный подбор шкур и расчет.`;
+                document.getElementById('warning').style.display = 'block';
+                document.getElementById('warning-text').textContent = warning_text;
+            } else {
+                document.getElementById('warning').style.display = 'none';
+            }
+            
+            // Выводим промежуточные результаты
+            document.getElementById('back-area').textContent = back_area.toFixed(2) + " м²";
+            document.getElementById('seat-area').textContent = seat_area.toFixed(2) + " м²";
+            document.getElementById('arm-area').textContent = arm_area.toFixed(2) + " м²";
+            document.getElementById('apron-area').textContent = apron_area.toFixed(2) + " м²";
+            document.getElementById('back-wall-area').textContent = back_wall_area.toFixed(2) + " м²";
+            document.getElementById('net-area').textContent = total_net_area.toFixed(2) + " м²";
+            document.getElementById('total-net-area').textContent = total_with_margin.toFixed(2) + " м²";
+            
+            // Выводим окончательные результаты
+            document.getElementById('final-hides').textContent = number_of_hides_final + " шт.";
+            document.getElementById('total-area').textContent = total_leather_area.toFixed(2) + " м²";
+            
+            // Выводим стоимость
+            document.getElementById('cost-value').textContent = total_cost.toLocaleString('ru-RU') + " ₽";
+            document.getElementById('cost-area').textContent = total_leather_area.toFixed(2) + " м²";
+            document.getElementById('cost-price').textContent = price_per_sqm.toLocaleString('ru-RU') + " ₽";
+            
+            // Визуализация шкур
+            const hidesViz = document.getElementById('hides-visualization');
+            hidesViz.innerHTML = '';
+            
+            for (let i = 0; i < calculated_hides; i++) {
+                const hideContainer = document.createElement('div');
+                hideContainer.style.display = 'flex';
+                hideContainer.style.flexDirection = 'column';
+                hideContainer.style.alignItems = 'center';
+                
+                const hideEl = document.createElement('div');
+                hideEl.className = 'hide';
+                hideEl.innerHTML = `<div class="hide-number">${i+1}</div>`;
+                hideContainer.appendChild(hideEl);
+                
+                const labelEl = document.createElement('div');
+                labelEl.className = 'hide-label';
+                labelEl.textContent = `Шкура ${i+1}`;
+                hideContainer.appendChild(labelEl);
+                
+                hidesViz.appendChild(hideContainer);
+            }
+            
+            // Добавляем дополнительные шкуры (запас)
+            for (let i = 0; i < reserve_hides; i++) {
+                const hideContainer = document.createElement('div');
+                hideContainer.style.display = 'flex';
+                hideContainer.style.flexDirection = 'column';
+                hideContainer.style.alignItems = 'center';
+                
+                const reserveHideEl = document.createElement('div');
+                reserveHideEl.className = 'hide reserve';
+                reserveHideEl.innerHTML = `<div class="hide-number">+</div>`;
+                hideContainer.appendChild(reserveHideEl);
+                
+                const reserveLabelEl = document.createElement('div');
+                reserveLabelEl.className = 'hide-label';
+                reserveLabelEl.textContent = 'Запас';
+                reserveLabelEl.style.fontWeight = 'bold';
+                hideContainer.appendChild(reserveLabelEl);
+                
+                hidesViz.appendChild(hideContainer);
+            }
+        }
+        
+        // Добавляем обработчики событий для автоматического пересчета
+        document.addEventListener('DOMContentLoaded', function() {
+            // Назначаем обработчики на все поля ввода
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('input', calculateLeather);
+            });
+            
+            // Первоначальный расчет
+            calculateLeather();
+        });
+    </script>
+    
+      <script src="https://sofany.pro/guard/sofany-gate.js" defer></script>
+    
+    
+</body>
+</html>

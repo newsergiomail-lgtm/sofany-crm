@@ -1,0 +1,4005 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Калькулятор мягкой мебели - подсчет материалов и себестоимости | Sofany Pro</title><meta name="description" content="Незаменим для частных мастеров, фабрик и менеджеров - считает себестоимость, маржинальность, пиломатериалы и наполнители. Кровати, диваны, кресла. ">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Все стили остаются без изменений */
+    :root {
+      --primary: #0ea5a5;
+      --primary-dark: #0b8f8f;
+      --primary-light: #e0f7f7;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --purple: #8b5cf6;
+      --pink: #ec4899;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+    .app-container { display: flex; min-height: 100vh; max-width: 1600px; margin: 0 auto; background: var(--card-bg); box-shadow: var(--shadow); }
+
+    /* Левая колонка - Конструктор */
+    .configurator-panel { flex: 0 0 62%; padding: 2rem; overflow-y: auto; background: var(--card-bg); border-right: 1px solid var(--border); }
+
+    /* Правая колонка - Дашборд */
+    .dashboard-panel { flex: 0 0 38%; background: linear-gradient(135deg, #f0fdfa 0%, #ecfeff 100%); padding: 2rem; display: flex; flex-direction: column; }
+
+    .tabs-navigation {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .tab-button {
+      padding: 1rem 0.5rem;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      text-align: center;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tab-button.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .tab-button:hover {
+      color: var(--primary-dark);
+      border-color: var(--primary);
+    }
+
+    /* Планшеты и маленькие ноутбуки: 2 ряда по 2 кнопки */
+    @media (max-width: 1024px) {
+      .tabs-navigation {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .tab-button {
+        padding: 0.9rem 0.5rem;
+        font-size: 0.85rem;
+        min-height: 55px;
+      }
+    }
+
+    /* Мобильные устройства в альбомной ориентации: 2 ряда по 2 кнопки */
+    @media (max-width: 768px) {
+      .tabs-navigation {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .tab-button {
+        padding: 0.8rem 0.4rem;
+        font-size: 0.8rem;
+        min-height: 50px;
+      }
+    }
+
+    /* Мобильные устройства в портретной ориентации: 1 кнопка в ряд */
+    @media (max-width: 480px) {
+      .tabs-navigation {
+        grid-template-columns: 1fr;
+      }
+      
+      .tab-button {
+        padding: 0.8rem;
+        font-size: 0.85rem;
+        min-height: 45px;
+      }
+    }
+
+    /* Для очень маленьких мобильных */
+    @media (max-width: 360px) {
+      .tab-button {
+        padding: 0.7rem;
+        font-size: 0.8rem;
+        min-height: 40px;
+      }
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Основные параметры */
+    .main-params { margin-bottom: 2rem; }
+    .param-group { margin-bottom: 1.5rem; padding: 1.5rem; background: var(--bg); border-radius: 12px; border: 1px solid var(--border); }
+    .param-group h3 { margin-bottom: 1rem; color: var(--text); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem; }
+    .param-group h3::before { content: "•"; color: var(--primary); }
+
+    .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+    .input-group { margin-bottom: 1rem; position: relative; }
+    .input-group label { display: block; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; font-size: 0.9rem; }
+    .input-group input { width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; transition: all 0.2s ease; background: var(--card-bg); }
+    .input-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(14, 165, 165, 0.1); }
+
+    /* ==== Объединённый дизайн выпадающих меню ==== */
+    .custom-select { position: relative; width: 100%; }
+
+    .select-selected {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s ease;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .select-selected:hover { border-color: var(--primary); }
+    .select-selected:after {
+      content: "⌄";
+      font-size: 1rem;
+      transition: transform 0.2s ease;
+      color: var(--text-muted);
+      font-weight: 300;
+      margin-left: 0.75rem;
+    }
+    .select-selected.select-arrow-active:after {
+      transform: rotate(180deg);
+      color: var(--primary);
+    }
+
+    /* ЕДИНСТВЕННЫЙ блок стилей для select-items */
+    .select-items {
+      position: absolute;
+      background: #fff;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 99;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: max-height 0.25s ease, opacity 0.15s ease;
+    }
+
+    .select-items.active {
+      max-height: 260px;
+      overflow: auto;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .select-item {
+      padding: 0.75rem 1rem 0.75rem 2.25rem;
+      cursor: pointer;
+      transition: background 0.2s ease, padding-left 0.2s ease;
+      border-bottom: 1px solid var(--border-light);
+      color: var(--text);
+      font-size: 0.95rem;
+      position: relative;
+    }
+    .select-item:last-child { border-bottom: none; }
+    .select-item:hover {
+      background: var(--bg);
+      padding-left: 2.5rem;
+    }
+    .select-item.selected {
+      background: linear-gradient(135deg, #ecfeff 0%, #f0fdfa 100%);
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .select-item.selected::before {
+      content: "✓";
+      position: absolute;
+      left: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    /* Скрыть оригинальные select */
+    .original-select { display: none; }
+
+    /* модальное позиционирование на мобильных */
+    @media (max-width: 1024px) {
+      .select-items {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 90% !important;
+        max-width: 400px;
+        max-height: 60vh !important;
+        z-index: 1000;
+      }
+
+      .select-item {
+        padding: 1rem 1.5rem 1rem 2.5rem !important;
+        font-size: 1rem !important;
+      }
+
+      .select-item.selected::before {
+        left: 1rem !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .select-selected {
+        padding: 0.65rem 0.85rem;
+        font-size: 0.9rem;
+      }
+      .select-item {
+        padding: 0.7rem 0.85rem 0.7rem 2.2rem;
+        font-size: 0.9rem;
+      }
+      .select-item.selected::before {
+        left: 0.8rem;
+      }
+      
+      /* Увеличиваем z-index для выпадающих меню на мобильных */
+      .select-items {
+        z-index: 1000 !important;
+      }
+      
+      .mobile-bottom-cards {
+        z-index: 90; /* Ниже выпадающих списков */
+      }
+    }
+
+    /* Карточки опций */
+    .card-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+    .option-card { padding: 1rem; border: 2px solid var(--border); border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.2s ease; background: var(--card-bg); }
+    .option-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow); }
+    .option-card.selected { border-color: var(--primary); background: linear-gradient(135deg, #ecfeff 0%, #f0fdfa 100%); box-shadow: var(--shadow); }
+    .option-card .label { font-weight: 600; font-size: 0.9rem; color: var(--text); }
+
+    /* Мультивыбор */
+    .multi-select-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+    .multi-select-item { padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.2s ease; background: var(--card-bg); }
+    .multi-select-item:hover { border-color: var(--primary); }
+    .multi-select-item.selected { border-color: var(--primary); background: linear-gradient(135deg, #ecfeff 0%, #f0fdfa 100%); }
+
+    /* Калькулятор ППУ */
+    .pu-calculator { background: var(--card-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid var(--border); }
+    .pu-input-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
+    .pu-input-field { flex: 1; }
+    .pu-size-info { background: var(--primary-light); border-radius: 8px; padding: 0.75rem 1rem; margin: 1rem 0; text-align: center; font-weight: 500; color: var(--primary-dark); font-size: 0.9rem; }
+    .add-pu-layer-btn { display: block; width: 100%; padding: 0.85rem; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; margin-top: 0.5rem; }
+    .add-pu-layer-btn:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+    .add-pu-layer-btn:disabled { background: var(--text-muted); cursor: not-allowed; transform: none; box-shadow: none; }
+    .pu-layers-container { margin-top: 1.5rem; max-height: 300px; overflow-y: auto; padding-right: 5px; }
+    .pu-layer { display: flex; align-items: center; padding: 0.85rem; background: var(--bg); border-radius: 12px; margin-bottom: 0.75rem; box-shadow: var(--shadow); position: relative; transition: transform 0.2s ease; }
+    .pu-layer:hover { transform: translateY(-1px); box-shadow: var(--shadow-hover); }
+    .pu-layer-color-marker { width: 20px; height: 20px; border-radius: 50%; margin-right: 0.85rem; flex-shrink: 0; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .pu-layer-info { flex-grow: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; font-size: 0.85rem; }
+    .pu-layer-info div { padding: 0.25rem; }
+    .pu-layer-brand { font-weight: 600; color: var(--primary-dark); }
+    .pu-layer-detail { color: var(--text-muted); font-size: 0.8rem; }
+    .pu-layer-cost { font-weight: 700; color: var(--primary); white-space: nowrap; margin-left: 0.5rem; }
+    .delete-pu-layer { background: none; color: var(--error); border: none; font-size: 1.4rem; cursor: pointer; padding: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease; }
+    .delete-pu-layer:hover { background: rgba(239, 68, 68, 0.1); transform: scale(1.1); }
+
+    /* Статистика ППУ */
+    .pu-stats { background: var(--primary-light); border-radius: 12px; padding: 1rem; margin-top: 1.5rem; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .pu-stat-item { text-align: center; }
+    .pu-stat-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem; }
+    .pu-stat-value { font-size: 1.1rem; font-weight: 700; color: var(--primary-dark); }
+
+    /* Правая колонка */
+    .dashboard-header { text-align: center; margin-bottom: 2rem; }
+    .dashboard-header h1 { font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem; }
+    .dashboard-header p { color: var(--text-muted); font-size: 0.9rem; }
+
+    .margin-control { background: var(--card-bg); border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.5rem; }
+    .margin-control h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: var(--text); text-align: center; }
+    .slider-group { margin-bottom: 1rem; }
+    .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .slider-header label { font-weight: 600; color: var(--text); }
+    .slider-value { font-weight: 700; color: var(--primary); background: var(--bg); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.9rem; }
+    .slider { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; background: var(--border); outline: none; }
+    .slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); cursor: pointer; border: 3px solid white; box-shadow: var(--shadow); }
+    .reset-button { display: block; width: 100%; padding: 0.75rem; background: var(--error); color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+    .reset-button:hover { background: #dc2626; transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+
+    .financial-summary { background: var(--card-bg); border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.5rem; }
+
+    /* ИТОГОВЫЕ БЛОКИ: 2 в ряд на десктопе, 1 в ряд на мобилках */
+    .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    @media (max-width: 768px) { .summary-grid { grid-template-columns: 1fr; } }
+
+    .summary-item { text-align: center; padding: 1rem; border-radius: 12px; background: var(--bg); }
+    .summary-item h3 { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .summary-value { font-size: 1.4rem; font-weight: 800; color: var(--text); }
+    .summary-item.total .summary-value { color: var(--primary); font-size: 1.6rem; }
+    .summary-item.profit .summary-value { color: var(--success); font-size: 1.6rem; }
+
+    .cost-breakdown { margin-bottom: 1.5rem; }
+    .cost-breakdown h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: var(--text); text-align: center; }
+    .cost-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    .cost-item:last-child { border-bottom: none; }
+    .cost-label { font-weight: 500; color: var(--text); }
+    .cost-value { font-weight: 600; color: var(--text); }
+    .cost-item.total { background: var(--primary); color: white; padding: 1rem; border-radius: 12px; margin-top: 0.75rem; }
+    .cost-item.total .cost-label, .cost-item.total .cost-value { color: white; font-weight: 700; font-size: 1rem; }
+
+    .materials-details { background: var(--bg); border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+    .materials-details h3 { font-size: 1rem; margin-bottom: 0.5rem; color: var(--text); }
+    .materials-list { font-size: 0.85rem; }
+    .materials-list div { display: flex; justify-content: space-between; padding: 0.25rem 0; }
+
+    /* Скрытые элементы */
+    .hidden { display: none !important; }
+
+    /* Стили скролла */
+    .pu-layers-container::-webkit-scrollbar { width: 6px; }
+    .pu-layers-container::-webkit-scrollbar-track { background: var(--border-light); border-radius: 3px; }
+    .pu-layers-container::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+    .pu-layers-container::-webkit-scrollbar-thumb:hover { background: var(--primary-dark); }
+
+    /* Адаптивность */
+    @media (max-width: 1024px) {
+      .app-container { flex-direction: column; }
+      .configurator-panel, .dashboard-panel { flex: none; width: 100%; padding: 1rem; }
+      .configurator-panel { border-right: none; border-bottom: 1px solid var(--border); }
+      .input-grid { grid-template-columns: 1fr; }
+      .pu-input-row { flex-direction: column; gap: 0.75rem; }
+      .pu-stats { grid-template-columns: 1fr; }
+      .select-items { position: fixed; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%); width: 90% !important; max-width: 400px; max-height: 60vh !important; z-index: 1000; }
+    }
+
+    @media (max-width: 768px) {
+      .card-options { grid-template-columns: repeat(2, 1fr); }
+      .param-group { padding: 1rem; }
+      .summary-value { font-size: 1.2rem; }
+      .summary-item.total .summary-value, .summary-item.profit .summary-value { font-size: 1.4rem; }
+      .tab-button { padding: 0.75rem 1rem; font-size: 0.9rem; }
+      .pu-layer-info { grid-template-columns: 1fr; }
+      .pu-layer-cost { margin-left: 0; margin-top: 0.5rem; }
+      .select-selected { padding: 0.65rem 0.85rem; font-size: 0.9rem; }
+      .select-item { padding: 0.7rem 0.85rem 0.7rem 2.2rem; font-size: 0.9rem; }
+      .select-item.selected::before { left: 0.8rem; }
+    }
+
+    /* Добавляем новые стили для мобильных карточек */
+    .mobile-bottom-cards {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 90;
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      padding: 12px;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .mobile-cards-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    
+    .mobile-bottom-card {
+      padding: 12px;
+      border-radius: 12px;
+      text-align: center;
+      background: var(--bg);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+    }
+    
+    .mobile-bottom-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    }
+    
+    .mobile-bottom-card h4 {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    
+    .mobile-bottom-card .value {
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
+    
+    .mobile-bottom-card.cost .value {
+      color: var(--text);
+    }
+    
+    .mobile-bottom-card.price .value {
+      color: var(--primary);
+    }
+    
+    .mobile-bottom-card.profit .value {
+      color: var(--success);
+    }
+    
+    .mobile-bottom-card.fabric .value {
+      color: var(--purple);
+    }
+
+    /* Адаптивность для мобильных карточек */
+    @media (max-width: 768px) {
+      .mobile-bottom-cards {
+        display: block;
+      }
+      
+      /* Добавляем отступ для контента, чтобы он не перекрывался карточками */
+      .configurator-panel {
+        padding-bottom: 120px !important;
+      }
+      
+      .dashboard-panel {
+        padding-bottom: 120px !important;
+      }
+      
+      /* Увеличиваем z-index для выпадающих меню на мобильных */
+      .select-items {
+        z-index: 1000 !important;
+      }
+    }
+
+    /* Бэкдроп для мобильных выпадающих списков */
+    .select-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      display: none;
+    }
+    
+    /* Мобильные карточки - ОБНОВЛЕННЫЕ СТИЛИ */
+    .mobile-bottom-cards {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 90;
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      padding: 8px 10px;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .mobile-cards-container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    
+    .mobile-bottom-card {
+      padding: 8px 6px;
+      border-radius: 10px;
+      text-align: center;
+      background: var(--bg);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: auto;
+    }
+    
+    .mobile-bottom-card h4 {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      line-height: 1.2;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    
+    .mobile-bottom-card .value {
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    
+    .mobile-bottom-card.cost .value {
+      color: var(--text);
+    }
+    
+    .mobile-bottom-card.price .value {
+      color: var(--primary);
+    }
+    
+    .mobile-bottom-card.profit .value {
+      color: var(--success);
+    }
+    
+    .mobile-bottom-card.fabric .value {
+      color: var(--purple);
+    }
+
+    /* Адаптивность для мобильных карточек */
+    @media (max-width: 768px) {
+      .mobile-bottom-cards {
+        display: block;
+      }
+      
+      /* Уменьшаем отступ для контента */
+      .configurator-panel {
+        padding-bottom: 80px !important;
+      }
+      
+      .dashboard-panel {
+        padding-bottom: 80px !important;
+      }
+    }
+
+    /* Для очень маленьких экранов */
+    @media (max-width: 360px) {
+      .mobile-cards-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      
+      .mobile-bottom-card {
+        padding: 10px 8px;
+      }
+      
+      .mobile-bottom-card h4 {
+        font-size: 0.7rem;
+      }
+      
+      .mobile-bottom-card .value {
+        font-size: 1.1rem;
+      }
+    }
+    
+    
+    
+    
+    /* Снять прежний запрет показа на мобиле */
+@media (max-width: 768px){
+  .mobile-financial-summary{ display:grid !important; }
+}
+
+/* Прятать на ПК */
+@media (min-width: 769px){
+  .mobile-financial-summary{ display:none !important; }
+}
+
+/* Оформление бара снизу для мобилы */
+@media (max-width: 768px){
+  .mobile-financial-summary{
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    padding: 8px max(12px, env(safe-area-inset-left))
+             calc(8px + env(safe-area-inset-bottom))
+             max(12px, env(safe-area-inset-right));
+    background: #fff;
+    box-shadow: 0 -6px 20px rgba(2,6,23,.15);
+    border-top: 1px solid #e2e8f0;
+    z-index: 9999;
+
+    /* 4 колонки в одну строку */
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .mobile-financial-summary .mcard{
+    background:#f8fafc;
+    border-radius:12px;
+    padding:8px 6px;
+    text-align:center;
+  }
+  .mobile-financial-summary .mcard-title{
+    font-size:11px; line-height:1.1;
+    color:#64748b; margin-bottom:4px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .mobile-financial-summary .mcard-value{
+    font-weight:800; font-size:20px; line-height:1; /* цифры крупнее */
+    color:#0f172a;
+  }
+
+  /* Акцент цвета (можешь поменять) */
+  .mcard.--cost   .mcard-value{ color:#0ea5a5; }  /* Себестоимость */
+  .mcard.--price  .mcard-value{ color:#111827; }  /* Цена */
+  .mcard.--fabric .mcard-value{ color:#8b5cf6; }  /* Ткань */
+  .mcard.--profit .mcard-value{ color:#10b981; }  /* Прибыль */
+
+  /* Чтобы контент сверху не перекрывался баром */
+  .mobile-accordion, .mobile-margin-control, .page-content{
+    margin-bottom: 80px;
+  }
+}
+    
+    
+    
+    
+.tabs-navigation {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Общий стиль кнопки */
+.tab-button {
+  position: relative;
+  flex: 1 1 auto;
+  padding: 10px 14px 10px 40px; /* место под кружок слева */
+  border-radius: 12px 12px 0 0;
+  border: none;
+  background: #e0f7f7;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: left;
+}
+
+/* Активная вкладка */
+.tab-button.active {
+  background: #0ea5a5;
+  color: #fff;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2);
+}
+
+/* Цифра-шаг */
+.tab-button::before {
+  content: attr(data-step);
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #0ea5a5;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .25s ease, color .25s ease;
+}
+
+/* Для активной кнопки — инверсия */
+.tab-button.active::before {
+  background: #fff;
+  color: #0ea5a5;
+}
+
+/* Hover */
+.tab-button:hover:not(.active) {
+  background: #c6f2f2;
+}
+    
+    
+    
+    
+    
+    
+    
+
+/* Стили для предиктивного ввода */
+.predictive-input-container {
+  position: relative;
+  width: 100%;
+}
+
+#pu-predictive-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+#pu-predictive-input:focus {
+  outline: none;
+  border-color: #0ea5a5;
+  box-shadow: 0 0 0 3px rgba(14, 165, 165, 0.1);
+}
+
+.predictive-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 1001;
+  margin-top: 5px;
+  max-height: 300px;
+  overflow-y: auto;
+  display: none;
+}
+
+.predictive-suggestions.active {
+  display: block;
+}
+
+.predictive-suggestion {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.predictive-suggestion:last-child {
+  border-bottom: none;
+}
+
+.predictive-suggestion:hover {
+  background-color: #f1f5f9;
+}
+
+.predictive-suggestion.selected {
+  background-color: #e0f7f7;
+  color: #0ea5a5;
+  font-weight: 600;
+}
+
+.suggestion-name {
+  font-weight: 600;
+  display: block;
+}
+
+.suggestion-details {
+  font-size: 0.85rem;
+  color: #64748b;
+  display: block;
+  margin-top: 2px;
+}
+
+/* Для мобильных устройств */
+@media (max-width: 1024px) {
+  .predictive-suggestions {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 50vh;
+    border-radius: 12px 12px 0 0;
+    z-index: 10000;
+  }
+  
+  .predictive-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: none;
+  }
+  
+  .predictive-suggestions.active ~ .predictive-overlay {
+    display: block;
+  }
+}
+
+/* Улучшаем скроллбар */
+.predictive-suggestions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.predictive-suggestions::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.predictive-suggestions::-webkit-scrollbar-thumb {
+  background: #0ea5a5;
+  border-radius: 3px;
+}
+
+.predictive-suggestions::-webkit-scrollbar-thumb:hover {
+  background: #0b8f8f;
+}
+
+    
+	
+	
+	
+	
+	    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+    .app-container { display: flex; min-height: 100vh; max-width: 1600px; margin: 0 auto; background: var(--card-bg); box-shadow: var(--shadow); }
+
+    /* Левая колонка - Конструктор */
+    .configurator-panel { flex: 0 0 62%; padding: 2rem; overflow-y: auto; background: var(--card-bg); border-right: 1px solid var(--border); }
+
+    /* Правая колонка - Дашборд */
+    .dashboard-panel { flex: 0 0 38%; background: linear-gradient(135deg, #f0fdfa 0%, #ecfeff 100%); padding: 2rem; display: flex; flex-direction: column; }
+
+    /* Стили для иконок */
+    .icon-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      height: 60px;
+    }
+    
+    .icon {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+    }
+    
+   .icon {
+  width: 84px;
+  height: 84px;
+}
+    
+    /* Стили для карточек с иконками */
+    .card-options {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    
+    @media (max-width: 1024px) {
+      .card-options {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .card-options {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .option-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: var(--card-bg);
+      height: 100%; /* Чтобы все карточки были одинаковой высоты */
+    }
+    
+    .option-card:hover { 
+      border-color: var(--primary); 
+      transform: translateY(-2px); 
+      box-shadow: var(--shadow); 
+    }
+    
+    .option-card.selected { 
+      border-color: var(--primary); 
+      background: linear-gradient(135deg, #ecfeff 0%, #f0fdfa 100%); 
+      box-shadow: var(--shadow); 
+    }
+    
+    .option-card .label { 
+      font-weight: 600; 
+      font-size: 0.9rem; 
+      color: var(--text); 
+      margin-top: 0.5rem;
+    }
+    
+    /* Стили для блока размеров с иконками */
+    .input-group.with-icon {
+      display: flex;
+      align-items: center;
+    }
+    
+    .input-group.with-icon label {
+      display: flex;
+      align-items: center;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+	
+
+	
+	
+/* Карточки отделки и опций: строго 3 в ряд на ПК */
+#decor-options .card-options,
+#extra-options .card-options {
+  display: grid;                    /* заменяем флекс на грид */
+  grid-template-columns: repeat(3, 1fr); /* три одинаковые колонки */
+  gap: 16px;                        /* отступы между карточками */
+}
+
+/* Сами карточки растягиваются одинаково */
+#decor-options .card-options label,
+#extra-options .card-options label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 3.5rem;               /* задаём общую высоту */
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+/* Адаптив: 2 колонки на планшетах, 1 — на телефонах */
+@media (max-width: 1024px) {
+  #decor-options .card-options,
+  #extra-options .card-options {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  #decor-options .card-options,
+  #extra-options .card-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+	
+	
+	
+	
+		
+	 
+
+    /* Стили для новой кнопки */
+    .new-calculator-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(106, 17, 203, 0.3);
+      border: none;
+      cursor: pointer;
+      position: relative;
+      z-index: 5;
+      margin-top: 10px;
+    }
+
+    .new-calculator-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(106, 17, 203, 0.4);
+    }
+
+    .new-calculator-btn:active {
+      transform: translateY(0);
+    }
+
+    .badge-new {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #ff4757;
+      color: white;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-weight: bold;
+      animation: pulse 2s infinite;
+      z-index: 10;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    /* Адаптивность */
+    @media (max-width: 1024px) {
+      .app-container { flex-direction: column; }
+      .configurator-panel, .dashboard-panel { flex: none; width: 100%; padding: 1rem; }
+      .configurator-panel { border-right: none; border-bottom: 1px solid var(--border); }
+      .input-grid { grid-template-columns: 1fr; }
+      .tabs-navigation { grid-template-columns: repeat(2, 1fr); }
+      
+      /* Адаптивность для кнопки с NEW */
+      .new-calculator-btn {
+        padding: 12px 16px;
+        font-size: 13px;
+      }
+      
+      .badge-new {
+        top: -8px;
+        right: -8px;
+        font-size: 9px;
+        padding: 3px 6px;
+      }
+    }
+	
+	
+    	
+
+	
+	
+	
+	
+    
+    
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="configurator-panel">
+      <div class="tabs-navigation">
+  <button class="tab-button active" data-tab="products" data-step="1">Выбор изделия</button>
+  <button class="tab-button" data-tab="filling" data-step="2">ППУ</button>
+  <button class="tab-button" data-tab="details" data-step="3">Декор и опции</button>
+  <button class="tab-button" data-tab="labor" data-step="4">Стоимость работ</button>
+</div>
+
+
+      <!-- ТАБ: ИЗДЕЛИЯ -->
+      <div class="tab-content active" id="products-tab">
+        <div class="param-group">
+          <h3>Тип изделия</h3>
+          <div class="card-options">
+            <div class="option-card selected" data-type="sofa" data-value="1">
+              <div class="icon-wrapper">
+                <img src="https://sofany.pro/icons/calc-icon-type-straight.svg" alt="Диван прямой" class="icon">
+              </div>
+              <div class="label">Диван прямой</div>
+            </div>
+            <div class="option-card" data-type="sofa" data-value="1.4">
+              <div class="icon-wrapper">
+                <img src="https://sofany.pro/icons/calc-icon-type-modular.svg" alt="Диван модульный" class="icon">
+              </div>
+              <div class="label">Диван модульный</div>
+            </div>
+            <div class="option-card" data-type="sofa" data-value="1.2">
+              <div class="icon-wrapper">
+                <img src="https://sofany.pro/icons/calc-icon-type-ugol.svg" alt="Диван угловой" class="icon">
+              </div>
+              <div class="label">Диван угловой</div>
+            </div>
+            <div class="option-card" data-type="sofa" data-value="1.3">
+              <div class="icon-wrapper">
+                <img src="https://sofany.pro/icons/calc-icon-type-ppp.svg" alt="Диван П-образный" class="icon">
+              </div>
+              <div class="label">Диван П-образный</div>
+            </div>
+            <div class="option-card" data-type="sofa" data-value="1.5">
+              <div class="icon-wrapper">
+                <img src="https://sofany.pro/icons/calc-icon-type-p-round-3.svg" alt="Диван радиусный" class="icon">
+              </div>
+              <div class="label">Диван радиусный</div>
+            </div>
+            <div class="option-card" data-type="armchair" data-value="0.8">
+              <div class="icon-wrapper">
+                <img src="https://sofany.pro/icons/tip/armchair.svg" alt="Кресло" class="icon">
+              </div>
+              <div class="label">Кресло</div>
+            </div>
+            <div class="option-card" data-type="bed" data-value="1.7">
+              <div class="icon-wrapper">
+                <img src="https://sofany.pro/icons/tip/bed-svg.svg" alt="Кровать" class="icon">
+              </div>
+              <div class="label">Кровать</div>
+            </div>
+            <div class="option-card" data-type="pouf" data-value="0.5">
+              <div class="icon-wrapper">
+                <img src="https://sofany.pro/icons/tip/pouf.svg" alt="Пуф" class="icon">
+              </div>
+              <div class="label">Пуф</div>
+            </div>
+          </div>
+          
+          
+          	 <!-- Кнопка перехода на новый калькулятор -->
+          <a href="https://sofany.pro/chester.html" target="_blank" class="new-calculator-btn">
+            Посчитать Честерфилд
+            <span class="badge-new">NEW</span>
+          </a>  
+          
+          
+          
+          
+        </div>
+
+        <div class="param-group">
+          <h3>Основные размеры</h3>
+          <div class="input-grid" id="sofa-dimensions">
+            <div class="input-group">
+              <label for="width" class="with-icon">
+                <img src="https://sofany.pro/icons/calc-icon-size-width.svg" alt="Ширина" class="size-icon">
+                Ширина (мм)
+              </label>
+              <input type="number" id="width" min="500" max="3000" placeholder="Введите ширину">
+            </div>
+            <div class="input-group">
+              <label for="depth" class="with-icon">
+                <img src="https://sofany.pro/icons/calc-icon-size-depth-GLUBINA.svg" alt="Глубина" class="size-icon">
+                Глубина (мм)
+              </label>
+              <input type="number" id="depth" min="500" max="1500" placeholder="Введите глубину">
+            </div>
+            <div class="input-group">
+              <label for="height" class="with-icon">
+                <img src="https://sofany.pro/icons/calc-icon-size-height.svg" alt="Высота" class="size-icon">
+                Высота (мм)
+              </label>
+              <input type="number" id="height" min="500" max="1200" placeholder="Введите высоту">
+            </div>
+            
+            
+            <div class="input-group">
+               <label for="armrests" class="with-icon">
+    <img src="https://sofany.pro/icons/tip/p-l.svg" alt="Подлокотники" class="size-icon">
+    Подлокотники 
+  </label>
+
+  <select id="armrests" class="original-select">
+    <option value="0" selected>Без подлокотников</option>
+    <option value="1">Один подлокотник</option>
+    <option value="2">Два подлокотника</option>
+  </select>
+
+  <div class="custom-select">
+    <div class="select-selected">Без подлокотников</div>
+    <div class="select-items">
+      <div class="select-item" data-value="0">Без подлокотников</div>
+      <div class="select-item" data-value="1">Один подлокотник</div>
+      <div class="select-item" data-value="2">Два подлокотника</div>
+                </div>
+                
+                
+              </div>
+            </div>
+          </div>
+
+          <div class="input-grid hidden" id="bed-dimensions">
+            <div class="input-group"><label for="bed-width">Ширина кровати (мм)</label><input type="number" id="bed-width" min="1400" max="2200" placeholder="Введите ширину"></div>
+            <div class="input-group"><label for="bed-length">Длина кровати (мм)</label><input type="number" id="bed-length" min="1900" max="2200" placeholder="Введите длину"></div>
+            <div class="input-group"><label for="tsarga-height">Высота царг (мм)</label><input type="number" id="tsarga-height" min="200" max="500" placeholder="Введите высоту"></div>
+            <div class="input-group"><label for="headboard-height">Высота изголовья (мм)</label><input type="number" id="headboard-height" min="500" max="1500" placeholder="Введите высоту"></div>
+          </div>
+        </div>
+
+        <div class="param-group" id="mechanism-block">
+          <h3>Механизм трансформации и жесткость</h3>
+          <div class="input-grid">
+            <div class="input-group">
+              <label for="mechanism">Механизм трансформации</label>
+              <select id="mechanism" class="original-select">
+                <option value="0" selected>Отсутствует</option>
+                <option value="1000">Книжка</option>
+                <option value="3000">Еврокнижка</option>
+                <option value="3000">Дельфин</option>
+                <option value="3500">Тик-так</option>
+                <option value="12000">Раскладушка</option>
+              </select>
+              <div class="custom-select">
+                <div class="select-selected">Отсутствует</div>
+                <div class="select-items">
+                  <div class="select-item" data-value="0">Отсутствует</div>
+                  <div class="select-item" data-value="1000">Книжка</div>
+                  <div class="select-item" data-value="3000">Еврокнижка</div>
+                  <div class="select-item" data-value="3000">Дельфин</div>
+                  <div class="select-item" data-value="3500">Тик-так</div>
+                  <div class="select-item" data-value="12000">Раскладушка</div>
+                </div>
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="firmness">Жёсткость сиденья</label>
+              <select id="firmness" class="original-select">
+                <option value="0.9">Мягкая</option>
+                <option value="1.0" selected>Средняя</option>
+                <option value="1.1">Жёсткая</option>
+              </select>
+              <div class="custom-select">
+                <div class="select-selected">Средняя</div>
+                <div class="select-items">
+                  <div class="select-item" data-value="0.9">Мягкая</div>
+                  <div class="select-item selected" data-value="1.0">Средняя</div>
+                  <div class="select-item" data-value="1.1">Жёсткая</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- ПЕРЕМЕЩЕННЫЙ БЛОК ОПЦИЙ КРОВАТИ -->
+        <div class="param-group hidden" id="bed-options-block">
+          <h3>Опции кровати</h3>
+          <div class="input-grid">
+            <div class="input-group">
+              <label for="base-type">Основание</label>
+              <select id="base-type" class="original-select">
+                <option value="1">Стандартное</option>
+                <option value="1.2">Ортопедическое (ламель)</option>
+                <option value="1.4">Ортопедическое (мультиламель)</option>
+              </select>
+              <div class="custom-select">
+                <div class="select-selected">Стандартное</div>
+                <div class="select-items">
+                  <div class="select-item" data-value="1">Стандартное</div>
+                  <div class="select-item" data-value="1.2">Ортопедическое (ламель)</div>
+                  <div class="select-item" data-value="1.4">Ортопедическое (мультиламель)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="multi-select-grid">
+            <div class="multi-select-item" data-value="1.2" data-type="linen-box"><div class="label">Бельевой ящик</div></div>
+            <div class="multi-select-item" data-value="1.4" data-type="lift-mechanism"><div class="label">Подъемный механизм</div></div>
+          </div>
+        </div>
+
+        <div class="param-group hidden" id="bed-foundation-group">
+          <h3>Основание кровати</h3>
+          <div class="input-grid">
+            <div class="input-group">
+              <label for="foundation-width">Ширина основания (мм)</label>
+              <select id="foundation-width" class="original-select">
+                <option value="" selected>Выберите ширину</option>
+              </select>
+              <div class="custom-select">
+                <div class="select-selected">Выберите ширину</div>
+                <div class="select-items" id="foundation-width-items"></div>
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="foundation-length">Длина основания (мм)</label>
+              <select id="foundation-length" class="original-select">
+                <option value="" selected>Выберите длину</option>
+              </select>
+              <div class="custom-select">
+                <div class="select-selected">Выберите длину</div>
+                <div class="select-items" id="foundation-length-items"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="param-group">
+          <h3>Материалы</h3>
+          <div class="input-grid">
+            <div class="input-group">
+              <label for="frame-type">Каркас</label>
+              <select id="frame-type" class="original-select">
+                <option value="" selected>Выберите материал</option>
+                <option value="dsp">ДСП (базовый)</option>
+                <option value="plywood">Фанера (стандарт)</option>
+                <option value="metal">Металлокаркас (премиум)</option>
+              </select>
+              <div class="custom-select">
+                <div class="select-selected">Выберите материал</div>
+                <div class="select-items">
+                  <div class="select-item" data-value="">Выберите материал</div>
+                  <div class="select-item" data-value="dsp">ДСП (базовый)</div>
+                  <div class="select-item" data-value="plywood">Фанера (стандарт)</div>
+                  <div class="select-item" data-value="metal">Металлокаркас (премиум)</div>
+                </div>
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="fabric-type">Обивочный материал</label>
+              <select id="fabric-type" class="original-select">
+                <option value="" selected>Выберите материал</option>
+                <option value="300">Ткань 1 кат.</option>
+                <option value="800">Ткань 2 кат.</option>
+                <option value="1000">Ткань 3 кат.</option>
+                <option value="1400">Ткань 4 кат.</option>
+                <option value="1500">Эко-кожа</option>
+                <option value="5000">Натуральная кожа</option>
+              </select>
+              <div class="custom-select">
+                <div class="select-selected">Выберите материал</div>
+                <div class="select-items">
+                  <div class="select-item" data-value="">Выберите материал</div>
+                  <div class="select-item" data-value="300">Ткань 1 кат.</div>
+                  <div class="select-item" data-value="800">Ткань 2 кат.</div>
+                  <div class="select-item" data-value="1000">Ткань 3 кат.</div>
+                  <div class="select-item" data-value="1400">Ткань 4 кат.</div>
+                  <div class="select-item" data-value="1500">Эко-кожа</div>
+                  <div class="select-item" data-value="5000">Натуральная кожа</div>
+                </div>
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="supports-type">Опоры</label>
+              <select id="supports-type" class="original-select">
+                <option value="0" selected>Без опор</option>
+                <option value="1000">Пластиковые</option>
+                <option value="2000">Деревянные</option>
+                <option value="5000">Металлические</option>
+              </select>
+              <div class="custom-select">
+                <div class="select-selected">Без опор</div>
+                <div class="select-items">
+                  <div class="select-item" data-value="0">Без опор</div>
+                  <div class="select-item" data-value="1000">Пластиковые</div>
+                  <div class="select-item" data-value="2000">Деревянные</div>
+                  <div class="select-item" data-value="5000">Металлические</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+  
+ 
+ 
+ 
+ 
+ 
+  <!-- ТАБ: ППУ -->
+<div class="tab-content" id="filling-tab">
+  <div class="pu-calculator">
+    <div class="input-group">
+      <label>Добавить слой наполнения ППУ</label>
+      <div class="pu-input-row">
+        <div class="pu-input-field">
+          <label>Марка ППУ</label>
+          <div class="predictive-input-container">
+            <input type="text" id="pu-predictive-input" placeholder="Начните вводить марку ППУ..." autocomplete="off">
+            <div class="predictive-suggestions" id="pu-predictive-suggestions">
+              <!-- Подсказки будут появляться здесь -->
+            </div>
+          </div>
+          <select id="pu-brand" class="original-select" style="display: none;">
+            <option value="">Выберите марку</option>
+          </select>
+        </div>
+        <div class="pu-input-field">
+          <label>Толщина (мм)</label>
+          <input type="number" id="pu-thickness" min="10" max="500" step="10" value="100" />
+        </div>
+      </div>
+      <div class="pu-size-info">Стандартный размер листа: 1000×2000 мм</div>
+      <button id="add-pu-layer" class="add-pu-layer-btn">Добавить слой ППУ</button>
+    </div>
+    <div class="pu-layers-container" id="pu-layers-container"></div>
+    <div class="pu-stats" id="pu-stats">
+      <div class="pu-stat-item"><div class="pu-stat-label">Кол-во слоев</div><div class="pu-stat-value" id="pu-layers-count">0</div></div>
+      <div class="pu-stat-item"><div class="pu-stat-label">Общая толщина</div><div class="pu-stat-value" id="pu-total-thickness">0 мм</div></div>
+      <div class="pu-stat-item"><div class="pu-stat-label">Общий вес</div><div class="pu-stat-value" id="pu-total-weight">0 кг</div></div>
+      <div class="pu-stat-item"><div class="pu-stat-label">Общая стоимость</div><div class="pu-stat-value" id="pu-total-cost">0 руб.</div></div>
+    </div>
+  </div>
+</div>
+ 
+
+  
+  
+  
+
+      <!-- ТАБ: ДЕКОР И ОПЦИИ -->
+      <div class="tab-content" id="details-tab">
+        <div class="param-group">
+          <h3>Дополнительная отделка</h3>
+          <div class="multi-select-grid">
+            <div class="multi-select-item" data-value="1500" data-type="stitching"><div class="label">Отстрочка</div></div>
+            <div class="multi-select-item" data-value="1500" data-type="tufting"><div class="label">Утяжки</div></div>
+            <div class="multi-select-item" data-value="1500" data-type="piping"><div class="label">Кант</div></div>
+            <div class="multi-select-item" data-value="1500" data-type="nails"><div class="label">Декоративные гвозди</div></div>
+            <div class="multi-select-item" data-value="2000" data-type="buttons" id="buttons-option"><div class="label">Пуговицы</div></div>
+            <div class="multi-select-item" data-value="1.5" data-type="carriage" id="carriage-option"><div class="label">Каретная стяжка</div></div>
+          </div>
+        </div>
+
+        <div class="param-group">
+          <h3>Подушки</h3>
+          <div class="input-grid">
+            <div class="input-group"><label for="back-pillows">Приспинные</label><input type="number" id="back-pillows" value="0" min="0" max="10"></div>
+            <div class="input-group"><div class="pillow-info">+2 м ткани на каждую</div></div>
+            <div class="input-group"><label for="seat-pillows">Сидения</label><input type="number" id="seat-pillows" value="0" min="0" max="10"></div>
+            <div class="input-group"><div class="pillow-info">+2 м ткани на каждую</div></div>
+            <div class="input-group"><label for="decor-pillows">Декоративные</label><input type="number" id="decor-pillows" value="0" min="0" max="10"></div>
+            <div class="input-group"><div class="pillow-info">+1 м ткани на каждую</div></div>
+          </div>
+        </div>
+
+        <div class="param-group">
+          <h3>Дополнительные опции</h3>
+          <div class="multi-select-grid">
+        <div class="multi-select-item" data-type="massage"        data-value="800"><div class="label">Массажный механизм</div></div>
+    <div class="multi-select-item" data-type="lighting"       data-value="1200"><div class="label">Подсветка</div></div>
+    <div class="multi-select-item" data-type="usb"            data-value="1500"><div class="label">USB-разъемы</div></div>
+    <div class="multi-select-item" data-type="recliner-mech"  data-value="5000"><div class="label">Реклайнер механический</div></div>
+    <div class="multi-select-item" data-type="recliner-elec"  data-value="8000"><div class="label">Реклайнер электрический</div></div>
+    <div class="multi-select-item" data-type="audio"          data-value="3500"><div class="label">Стереосистемa Bluetooth</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ТАБ: РАБОТЫ -->
+      <div class="tab-content" id="labor-tab">
+        <div class="param-group">
+          <h3>Стоимость работ</h3>
+          <div class="input-grid">
+            <div class="input-group"><label for="labor-frame">Каркас (₽)</label><input type="number" id="labor-frame" min="0" max="50000"></div>
+            <div class="input-group"><label for="labor-forming">Формовка (₽)</label><input type="number" id="labor-forming" min="0" max="30000"></div>
+            <div class="input-group"><label for="labor-sewing">Пошив (₽)</label><input type="number" id="labor-sewing" min="0" max="70000"></div>
+            <div class="input-group"><label for="labor-upholstery">Обивка (₽)</label><input type="number" id="labor-upholstery" min="0" max="60000"></div>
+            <div class="input-group"><label for="labor-delivery">Неучтенные расходы (₽)</label><input type="number" id="labor-delivery" min="0" max="20000"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-panel">
+      <div class="dashboard-header">
+  <h1>Sofany Pro</h1>
+  <p>Расчёт себестоимости и маржинальности</p>
+  <div id="subscription-status" style="
+      margin-top:10px; padding:6px 12px;
+      display:inline-block; border-radius:8px;
+      background:#fee2e2; color:#991b1b;
+      font-weight:600; font-size:0.9rem;
+      box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+    🔒 Подписка не активна
+  </div>
+</div>
+      <div class="margin-control">
+        <h3>Наценка</h3>
+        <div class="slider-group">
+          <div class="slider-header"><label>Уровень наценки</label><span class="slider-value" id="margin-value">50%</span></div>
+          <input type="range" class="slider" id="margin" min="20" max="100" step="5" value="50" />
+          <div class="slider-labels"><span style="float:left;">20%</span><span style="float:right;">100%</span></div>
+        </div>
+        <button id="reset-all" class="reset-button">Сбросить все значения</button>
+      </div>
+
+      <div class="financial-summary">
+        <div class="summary-grid">
+          <div class="summary-item">
+            <h3>Себестоимость</h3>
+            <div class="summary-value" id="total-cost">0 ₽</div>
+          </div>
+          <div class="summary-item">
+            <h3>Расход ткани</h3>
+            <div class="summary-value" id="fabric-usage">0 м</div>
+          </div>
+          <div class="summary-item total">
+            <h3>Цена продажи</h3>
+            <div class="summary-value" id="sale-price">0 ₽</div>
+          </div>
+          <div class="summary-item profit">
+            <h3>Прибыль</h3>
+            <div class="summary-value" id="profit">0 ₽</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cost-breakdown">
+        <h2>Структура затрат</h2>
+        <div class="cost-item"><span class="label">Материалы</span><span class="value" id="cost-materials">0 ₽</span></div>
+        <div class="cost-item"><span class="label">Работа</span><span class="value" id="cost-labor">0 ₽</span></div>
+        <div class="cost-item"><span class="label">ППУ</span><span class="value" id="cost-pu">0 ₽</span></div>
+        <div class="cost-item"><span class="label">Доп. опции</span><span class="value" id="cost-options">0 ₽</span></div>
+        <div class="cost-item total"><span class="label">Итого себестоимость</span><span class="value" id="cost-total">0 ₽</span></div>
+      </div>
+
+      <div class="materials-details">
+        <h3>Расход материалов</h3>
+        <div class="materials-list" id="materials-list"></div>
+      </div>
+
+      <!-- Client Info & Order Creation -->
+      <div class="card" id="crm-integration-block">
+        <h3 class="card-title-small">Данные для CRM</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="crm_name">ФИО Клиента *</label>
+            <input type="text" id="crm_name" placeholder="Иван Петров">
+          </div>
+          <div class="form-group">
+            <label for="crm_phone">Телефон</label>
+            <input type="tel" id="crm_phone" placeholder="+7 999 123-45-67">
+          </div>
+        </div>
+        <button id="create-order-btn" class="create-order-btn">Создать заказ в CRM</button>
+        <div id="create-order-status" class="status-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== КОНФИГУРАЦИЯ И КОНСТАНТЫ ====================
+    const CONFIG = {
+      PRODUCT_COMPLEXITY: {
+        SOFA_STRAIGHT: 1.0,
+        SOFA_MODULAR: 1.4,
+        SOFA_CORNER: 1.2,
+        SOFA_U_SHAPED: 1.3,
+        SOFA_RADIUS: 1.5,
+        ARMCHAIR: 0.8,
+        BED: 1.7,
+        POUF: 0.5
+      },
+      
+      MECHANISMS: {
+        NONE: 0,
+        BOOK: 1000,
+        EURO_BOOK: 3000,
+        DOLPHIN: 3000,
+        TIC_TAC: 3500,
+        ROLL_OUT: 12000
+      },
+      
+      FIRMNESS: {
+        SOFT: 0.9,
+        MEDIUM: 1.0,
+        HARD: 1.1
+      },
+      
+      FRAME_MATERIALS: {
+        DSP: {
+          pricePerSheet: 800,
+          consumption: 0.7
+        },
+        PLYWOOD: {
+          pricePerSheet: 2000,
+          consumption: 1.1
+        },
+        METAL: {
+          profilePrice: 100,
+          profileConsumption: 4,
+          plywoodConsumption: 0.5
+        }
+      },
+      
+      MATERIAL_AREAS: {
+        PLYWOOD: 2.32,
+        DSP: 5.8,
+        DVP: 2.98
+      },
+      
+      SHEET_MATERIALS: {
+        PLYWOOD: 2000,
+        DSP: 800,
+        DVP: 450
+      },
+      
+      UPHOLSTERY: {
+        FABRIC_1: 300,
+        FABRIC_2: 800,
+        FABRIC_3: 1000,
+        FABRIC_4: 1400,
+        ECO_LEATHER: 1500,
+        GENUINE_LEATHER: 5000
+      },
+      
+      SUPPORTS: {
+        NONE: 0,
+        PLASTIC: 1000,
+        WOODEN: 2000,
+        METAL: 5000
+      },
+      
+      FABRIC_CONSUMPTION: {
+        BASE_DIVIDER: 1.4,
+        BED_BASE: 1.1,
+        PILLOW_BACK: 2,
+        PILLOW_SEAT: 2,
+        PILLOW_DECOR: 1,
+        ARMREST: 2,
+        MECHANISM_BOOK: 4,
+        MECHANISM_TIC_TAC: 4,
+        LEATHER_MULTIPLIER: 1.6,
+        LEATHER_CARRIAGE: 2.4,
+        CARRIAGE_MULTIPLIER: 1.5
+      },
+      
+      DECORATION: {
+        STITCHING: 1500,
+        TUFTING: 1500,
+        PIPING: 1500,
+        NAILS: 1500,
+        BUTTONS: 2000,
+        CARRIAGE: 1.5
+      },
+      
+      OPTIONS: {
+        MASSAGE: 800,
+        LIGHTING: 1200,
+        USB: 1500,
+        RECLINER_MECH: 5000,
+        RECLINER_ELEC: 8000,
+        AUDIO: 3500,
+        MEASURE: 2000,
+        DESIGN: 3000,
+        ASSEMBLY: 1500,
+        UTILIZATION: 1000
+      },
+      
+      SERVICES: {
+        FRAME: 0,
+        FORMING: 0,
+        SEWING: 0,
+        UPHOLSTERY: 0,
+        DELIVERY: 0
+      },
+      
+      PU: {
+        STANDARD_SIZE: {
+          width: 1000,
+          height: 2000
+        },
+        MAX_LAYERS: 5,
+        COLORS: [
+          '#0ea5a5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'
+        ]
+      },
+      
+      PU_BRANDS: [
+        { name: "ST 2536", density: 25, pricePerKg: 430 },
+        { name: "ST 2836", density: 28, pricePerKg: 430 },
+        { name: "ST 3038", density: 30, pricePerKg: 430 },
+        { name: "ST 3542", density: 35, pricePerKg: 430 },
+        { name: "HL 2850", density: 28, pricePerKg: 460 },
+        { name: "HL 2875", density: 28, pricePerKg: 460 },
+        { name: "HL 4065", density: 40, pricePerKg: 460 },
+        { name: "EL 2345", density: 23, pricePerKg: 440 },
+        { name: "EL 2545", density: 25, pricePerKg: 440 },
+        { name: "EL 2842", density: 28, pricePerKg: 440 },
+        { name: "EL 3245", density: 32, pricePerKg: 440 },
+        { name: "EL 3550", density: 35, pricePerKg: 440 },
+        { name: "EL 4060", density: 40, pricePerKg: 460 },
+        { name: "HS 2012", density: 20, pricePerKg: 455 },
+        { name: "HS 2516", density: 25, pricePerKg: 450 },
+        { name: "HS 2520", density: 25, pricePerKg: 450 },
+        { name: "HS 2525", density: 25, pricePerKg: 450 },
+        { name: "HS 3030", density: 30, pricePerKg: 450 },
+        { name: "HS 3530", density: 35, pricePerKg: 450 },
+        { name: "HS 4008", density: 40, pricePerKg: 550 },
+        { name: "HR 3020", density: 30, pricePerKg: 565 },
+        { name: "HR 3030", density: 30, pricePerKg: 565 },
+        { name: "HR 3035", density: 30, pricePerKg: 565 },
+        { name: "HR 3530", density: 35, pricePerKg: 565 },
+        { name: "HR 3535", density: 35, pricePerKg: 565 },
+        { name: "HR 3830", density: 38, pricePerKg: 565 },
+        { name: "HR 4023", density: 40, pricePerKg: 565 },
+        { name: "HR 5535", density: 55, pricePerKg: 565 },
+        { name: "HR 5020LL", density: 50, pricePerKg: 590 },
+        { name: "VE 3015P", density: 30, pricePerKg: 660 },
+        { name: "VE 3508", density: 35, pricePerKg: 705 },
+        { name: "VE 4010", density: 40, pricePerKg: 675 },
+        { name: "VE 4512", density: 45, pricePerKg: 795 },
+        { name: "VE 5014", density: 50, pricePerKg: 795 },
+        { name: "EHR 3512", density: 35, pricePerKg: 585 },
+        { name: "EHR 3520", density: 35, pricePerKg: 585 },
+        { name: "EHR 3530", density: 35, pricePerKg: 585 },
+        { name: "EHR 3540", density: 35, pricePerKg: 585 },
+        { name: "EHR 4023", density: 40, pricePerKg: 585 },
+        { name: "EHR 4030", density: 40, pricePerKg: 585 },
+        { name: "EHR 4040", density: 40, pricePerKg: 585 },
+        { name: "EHR 5535", density: 55, pricePerKg: 585 }
+      ],
+      
+      BED: {
+        FOUNDATION: {
+          WIDTH: {
+            min: 800,
+            max: 2000,
+            step: 100
+          },
+          LENGTH: {
+            min: 1600,
+            max: 2100,
+            step: 100
+          }
+        },
+        HARDWARE: {
+          LIFTING_MECHANISM: 3000,
+          INSTALLATION_KIT: 3000,
+          LINEN_BOX: 2500 // Добавляем стоимость бельевого ящика
+        },
+        BASE: {
+          STANDARD: 1.0,
+          ORTHOPEDIC: 1.2,
+          MULTI_ORTHOPEDIC: 1.4
+        }
+      },
+      
+      MARGIN: {
+        MIN: 20,
+        MAX: 100,
+        DEFAULT: 50,
+        STEP: 5
+      },
+      
+      DISPLAY: {
+        CURRENCY: "₽",
+        FABRIC_UNIT: "м"
+      }
+    };
+
+    // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
+    let currentProductType = 'sofa';
+    let puLayers = [];
+    let puLayerCount = 0;
+    let foundationCost = 0;
+    let hardwareCost = CONFIG.BED.HARDWARE.INSTALLATION_KIT;
+
+    // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+    function setTextIfExists(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+
+    function setHTMLIfExists(id, html) {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    }
+
+    // ==================== ИНИЦИАЛИЗАЦИЯ РАЗМЕРОВ ОСНОВАНИЯ КРОВАТИ ====================
+    function initBedFoundationDimensions() {
+      const widthSelect = document.getElementById('foundation-width');
+      const lengthSelect = document.getElementById('foundation-length');
+      const widthItems = document.getElementById('foundation-width-items');
+      const lengthItems = document.getElementById('foundation-length-items');
+      
+      // Очищаем существующие опции
+      widthSelect.innerHTML = '<option value="" selected>Выберите ширину</option>';
+      lengthSelect.innerHTML = '<option value="" selected>Выберите длину</option>';
+      widthItems.innerHTML = '';
+      lengthItems.innerHTML = '';
+      
+      // Добавляем опции для ширины
+      for (let w = CONFIG.BED.FOUNDATION.WIDTH.min; w <= CONFIG.BED.FOUNDATION.WIDTH.max; w += CONFIG.BED.FOUNDATION.WIDTH.step) {
+        const option = document.createElement('option');
+        option.value = w;
+        option.textContent = `${w} мм`;
+        widthSelect.appendChild(option);
+        
+        const item = document.createElement('div');
+        item.className = 'select-item';
+        item.dataset.value = w;
+        item.textContent = `${w} мм`;
+        widthItems.appendChild(item);
+      }
+      
+      // Добавляем опции для длины
+      for (let l = CONFIG.BED.FOUNDATION.LENGTH.min; l <= CONFIG.BED.FOUNDATION.LENGTH.max; l += CONFIG.BED.FOUNDATION.LENGTH.step) {
+        const option = document.createElement('option');
+        option.value = l;
+        option.textContent = `${l} мм`;
+        lengthSelect.appendChild(option);
+        
+        const item = document.createElement('div');
+        item.className = 'select-item';
+        item.dataset.value = l;
+        item.textContent = `${l} мм`;
+        lengthItems.appendChild(item);
+      }
+      
+      // Обновляем кастомные селекты
+      initCustomSelects();
+    }
+
+    // ==================== ТАБЫ ====================
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.addEventListener('click', function() {
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById(this.getAttribute('data-tab') + '-tab').classList.add('active');
+        closeAllCustomSelects();
+      });
+    });
+
+     // ==================== DVP Фанера  ДЛЯ КАРКАСА ====================
+   // Коэффициенты для регулировки расхода
+const DVP_CONSUMPTION_FACTOR = 1.99; // Увеличиваем расход DVP на 20%
+const PLYWOOD_CONSUMPTION_FACTOR = 1.9; // Увеличиваем расход фанеры на 20%
+
+// Коэффициенты для подлокотников
+const ARMREST_PLYWOOD_CONSUMPTION_FACTOR = 1.4;  // Увеличиваем расход фанеры для подлокотников на 20%
+const ARMREST_DVP_CONSUMPTION_FACTOR = 1.3;      // Увеличиваем расход ДВП для подлокотников на 20%
+
+function calculateDVPConsumption(params) {
+  const {
+    currentProductType,
+    width, depth, height, armrests,
+    bedWidth, bedLength, tsargaHeight, headboardHeight
+  } = params;
+
+  let dvpArea_mm2 = 0;
+  let plywoodArea_mm2 = 0;
+
+  // Пример расчета для кровати
+  if (currentProductType === 'bed') {
+    const headboardArea = (bedWidth * headboardHeight);
+    const tsargaPerimeter = 2 * (bedWidth + bedLength);
+    const tsargaArea = tsargaPerimeter * tsargaHeight;
+    dvpArea_mm2 = headboardArea + tsargaArea;
+  } else {
+    const backArea = width * height;
+    const armsOuterArea = armrests * (depth * height);
+    const armDvpArea = 0.5 * armsOuterArea;
+
+    // Применяем коэффициенты для подлокотников
+    const adjustedArmrestArea = armDvpArea * ARMREST_DVP_CONSUMPTION_FACTOR;  // Применяем коэффициент расхода ДВП на подлокотники
+    const adjustedArmrestPlywoodArea = armDvpArea * ARMREST_PLYWOOD_CONSUMPTION_FACTOR;  // Применяем коэффициент расхода фанеры на подлокотники
+
+    dvpArea_mm2 = backArea + adjustedArmrestArea;  // Обновляем расчет для DVP
+    plywoodArea_mm2 = backArea + adjustedArmrestPlywoodArea; // Обновляем расчет для фанеры
+  }
+
+  const dvpArea_m2 = dvpArea_mm2 / 1_000_000;
+  const plywoodArea_m2 = plywoodArea_mm2 / 1_000_000; // Площадь фанеры
+  const dvpSheets = dvpArea_m2 / CONFIG.MATERIAL_AREAS.DVP;
+  const plywoodSheets = plywoodArea_m2 / CONFIG.MATERIAL_AREAS.PLYWOOD;
+
+  // Умножаем на коэффициенты для изменения расхода материалов
+  const adjustedDVP = dvpArea_m2 * DVP_CONSUMPTION_FACTOR;
+  const adjustedPlywood = plywoodArea_m2 * PLYWOOD_CONSUMPTION_FACTOR;
+
+  // Возвращаем результаты
+  return {
+    dvpArea_m2: adjustedDVP,
+    plywoodArea_m2: adjustedPlywood,
+    dvpSheets,
+    plywoodSheets
+  };
+}
+
+
+    // ==================== ЕДИНАЯ ИНИЦИАЛИЗАЦИЯ КАСТОМНЫХ SELECT ====================
+    function initCustomSelects() {
+      document.querySelectorAll('.custom-select').forEach(custom => {
+        const selected = custom.querySelector('.select-selected');
+        const itemsContainer = custom.querySelector('.select-items');
+        const original = custom.previousElementSibling; // реальный <select>
+        
+        // очистка
+        itemsContainer.innerHTML = '';
+        if (original.id === 'pu-brand') {
+          // наполняем из CONFIG.PU_BRANDS
+          original.innerHTML = '';
+          CONFIG.PU_BRANDS.forEach((brand, idx) => {
+            const text = `${brand.name} (${brand.density} кг/м³)`;
+            
+            const opt = document.createElement('option');
+            opt.value = brand.name;
+            opt.textContent = text;
+            original.appendChild(opt);
+            
+            const item = document.createElement('div');
+            item.className = 'select-item';
+            item.dataset.value = brand.name;
+            item.textContent = text;
+            if (idx === 0) item.classList.add('selected');
+            itemsContainer.appendChild(item);
+          });
+          if (CONFIG.PU_BRANDS.length > 0) {
+            selected.textContent = itemsContainer.querySelector('.select-item').textContent;
+            original.value = CONFIG.PU_BRANDS[0].name;
+          }
+        } else {
+          // обычный select
+          original.querySelectorAll('option').forEach(opt => {
+            const item = document.createElement('div');
+            item.className = 'select-item';
+            item.dataset.value = opt.value;
+            item.textContent = opt.textContent;
+            if (opt.selected) {
+              item.classList.add('selected');
+              selected.textContent = opt.textContent;
+            }
+            itemsContainer.appendChild(item);
+          });
+        }
+        
+        // открытие/закрытие
+        selected.onclick = e => {
+          e.stopPropagation();
+          document.querySelectorAll('.select-items').forEach(i => { if (i!==itemsContainer) i.classList.remove('active'); });
+          document.querySelectorAll('.select-selected').forEach(s => { if (s!==selected) s.classList.remove('select-arrow-active'); });
+          itemsContainer.classList.toggle('active');
+          selected.classList.toggle('select-arrow-active');
+        };
+        
+        // выбор
+        itemsContainer.onclick = e => {
+          const item = e.target.closest('.select-item');
+          if (!item) return;
+          itemsContainer.querySelectorAll('.select-item').forEach(x=>x.classList.remove('selected'));
+          item.classList.add('selected');
+          selected.textContent = item.textContent;
+          original.value = item.dataset.value;
+          original.dispatchEvent(new Event('change', { bubbles:true }));
+          itemsContainer.classList.remove('active');
+          selected.classList.remove('select-arrow-active');
+        };
+      });
+      
+      // клик вне — закрыть
+      document.addEventListener('click', e => {
+        if (!e.target.closest('.custom-select')) {
+          document.querySelectorAll('.select-items').forEach(i=>i.classList.remove('active'));
+          document.querySelectorAll('.select-selected').forEach(s=>s.classList.remove('select-arrow-active'));
+        }
+      });
+    }
+
+    // ==================== БЭКДРОП И ЗАКРЫТИЕ СЕЛЕКТОВ ====================
+    function closeAllCustomSelects() {
+      document.querySelectorAll('.select-items').forEach(i => i.classList.remove('active'));
+      document.querySelectorAll('.select-selected').forEach(s => s.classList.remove('select-arrow-active'));
+    }
+
+    function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(this,a),ms); }; }
+    const closeDebounced = debounce(closeAllCustomSelects, 80);
+    
+    window.addEventListener('resize', closeDebounced);
+    window.addEventListener('orientationchange', closeAllCustomSelects);
+    document.addEventListener('scroll', closeDebounced, true);
+    if (window.visualViewport){
+      visualViewport.addEventListener('resize', closeDebounced);
+      visualViewport.addEventListener('scroll', closeDebounced);
+    }
+    
+    // Закрывать при переключении вкладок
+    document.querySelectorAll('.tab-button').forEach(btn => {
+      btn.addEventListener('click', closeAllCustomSelects);
+    });
+
+    // ==================== КАРЕТНАЯ СТЯЖКА => включает Пуговицы ====================
+    document.addEventListener('click', (e) => {
+      const carriage = e.target.closest('#carriage-option');
+      if (!carriage) return;
+      const isSelected = carriage.classList.contains('selected');
+      const buttonsOption = document.getElementById('buttons-option');
+      if (!isSelected) {
+        carriage.classList.add('selected');
+        if (buttonsOption) buttonsOption.classList.add('selected');
+      } else {
+        carriage.classList.remove('selected');
+      }
+      calculatePrice();
+    });
+
+    // ==================== СБРОС ВСЕГО ====================
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#reset-all')) return;
+      
+      document.getElementById('width').value = '';
+      document.getElementById('depth').value = '';
+      document.getElementById('height').value = '';
+      document.getElementById('armrests').value = '0';
+      document.getElementById('bed-width').value = '';
+      document.getElementById('bed-length').value = '';
+      document.getElementById('tsarga-height').value = '';
+      document.getElementById('headboard-height').value = '';
+      
+      document.getElementById('mechanism').value = '0';
+      document.getElementById('firmness').value = '1.0';
+      document.getElementById('frame-type').value = '';
+      document.getElementById('fabric-type').value = '';
+      document.getElementById('supports-type').value = '0';
+      document.getElementById('base-type').value = '1';
+      
+      document.querySelectorAll('.multi-select-item.selected').forEach(item => item.classList.remove('selected'));
+      
+      document.getElementById('back-pillows').value = '0';
+      document.getElementById('seat-pillows').value = '0';
+      document.getElementById('decor-pillows').value = '0';
+      
+      document.getElementById('labor-frame').value = '';
+      document.getElementById('labor-forming').value = '';
+      document.getElementById('labor-sewing').value = '';
+      document.getElementById('labor-upholstery').value = '';
+      document.getElementById('labor-delivery').value = '';
+      
+      puLayers = [];
+      puLayerCount = 0;
+      renderPULayers();
+      updatePUStats();
+      document.getElementById('add-pu-layer').disabled = false;
+      
+      document.getElementById('margin').value = CONFIG.MARGIN.DEFAULT;
+      document.getElementById('margin-value').textContent = `${CONFIG.MARGIN.DEFAULT}%`;
+      calculatePrice();
+      alert('Все значения сброшены!');
+    });
+
+    // ==================== ДОБАВИТЬ СЛОЙ ППУ ====================
+    document.addEventListener('click', (e) => {
+      const addBtn = e.target.closest('#add-pu-layer');
+      if (!addBtn) return;
+      if (puLayerCount >= CONFIG.PU.MAX_LAYERS) {
+        alert(`Максимальное количество слоев ППУ - ${CONFIG.PU.MAX_LAYERS}`);
+        return;
+      }
+      
+      const brandName = document.getElementById('pu-brand').value;
+      const brandData = CONFIG.PU_BRANDS.find(b => b.name === brandName);
+      if (!brandData) { alert('Пожалуйста, выберите марку ППУ'); return; }
+      
+      const thickness = parseInt(document.getElementById('pu-thickness').value);
+      const width = CONFIG.PU.STANDARD_SIZE.width;
+      const length = CONFIG.PU.STANDARD_SIZE.height;
+      const pricePerKg = brandData.pricePerKg;
+      const density = brandData.density;
+      
+      const area = (width / 1000) * (length / 1000);
+      const volume = area * (thickness / 1000);
+      const weight = volume * density;
+      const cost = weight * pricePerKg;
+      
+      const layer = {
+        id: Date.now(),
+        brand: brandName,
+        density, thickness, pricePerKg, width, length,
+        area: area.toFixed(2), volume: volume.toFixed(3), weight: weight.toFixed(2), cost: cost.toFixed(2),
+        color: CONFIG.PU.COLORS[puLayerCount % CONFIG.PU.COLORS.length]
+      };
+      puLayers.push(layer);
+      puLayerCount++;
+      renderPULayers();
+      updatePUStats();
+      calculatePrice();
+      if (puLayerCount >= CONFIG.PU.MAX_LAYERS) document.getElementById('add-pu-layer').disabled = true;
+    });
+
+    function renderPULayers() {
+      const container = document.getElementById('pu-layers-container');
+      container.innerHTML = '';
+      puLayers.forEach(layer => {
+      const el = document.createElement('div');
+      el.className = 'pu-layer';
+      el.innerHTML = `
+        <div class="pu-layer-color-marker" style="background-color:${layer.color}"></div>
+        <div class="pu-layer-info">
+          <div class="pu-layer-brand">${layer.brand}</div>
+          <div class="pu-layer-detail">${layer.density} кг/м³</div>
+          <div class="pu-layer-detail">${layer.thickness} мм</div>
+          <div class="pu-layer-detail">${layer.weight} кг</div>
+        </div>
+        <div class="pu-layer-cost">${Number(layer.cost).toLocaleString()} руб.</div>
+        <button class="delete-pu-layer" data-id="${layer.id}">×</button>`;
+      container.appendChild(el);
+      });
+      container.querySelectorAll('.delete-pu-layer').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.dataset.id, 10);
+          puLayers = puLayers.filter(l => l.id !== id);
+          puLayerCount--;
+          renderPULayers();
+          updatePUStats();
+          calculatePrice();
+          document.getElementById('add-pu-layer').disabled = false;
+        });
+      });
+    }
+
+    function updatePUStats() {
+      const totalLayers = puLayers.length;
+      const totalThickness = puLayers.reduce((s,l)=>s+parseInt(l.thickness),0);
+      const totalWeight = puLayers.reduce((s,l)=>s+parseFloat(l.weight),0);
+      const totalCost = puLayers.reduce((s,l)=>s+parseFloat(l.cost),0);
+      setTextIfExists('pu-layers-count', totalLayers);
+      setTextIfExists('pu-total-thickness', `${totalThickness} мм`);
+      setTextIfExists('pu-total-weight', `${totalWeight.toFixed(2)} кг`);
+      setTextIfExists('pu-total-cost', `${totalCost.toFixed(2)} руб.`);
+    }
+
+    // ==================== ВЫБОР ТИПА ИЗДЕЛИЯ ====================
+    document.querySelectorAll('.option-card[data-type]').forEach(card => {
+      card.addEventListener('click', function() {
+        document.querySelectorAll('.option-card[data-type]').forEach(c => c.classList.remove('selected'));
+        this.classList.add('selected');
+        currentProductType = this.dataset.type;
+        
+        // Показываем/скрываем соответствующие блоки
+        const isBed = currentProductType === 'bed';
+        document.getElementById('sofa-dimensions').classList.toggle('hidden', isBed);
+        document.getElementById('bed-dimensions').classList.toggle('hidden', !isBed);
+        document.getElementById('mechanism-block').classList.toggle('hidden', isBed);
+        document.getElementById('bed-options-block').classList.toggle('hidden', !isBed);
+        document.getElementById('bed-foundation-group').classList.toggle('hidden', !isBed);
+        
+        // Инициализируем размеры основания кровати, если выбрана кровать
+        if (isBed) {
+          initBedFoundationDimensions();
+        }
+        
+        // Сбрасываем значения при переключении типа изделия
+        resetValuesOnProductChange();
+        
+        calculatePrice();
+      });
+    });
+
+    // ==================== СБРОС ЗНАЧЕНИЙ ПРИ СМЕНЕ ТИПА ИЗДЕЛИЯ ====================
+    function resetValuesOnProductChange() {
+      // Сбрасываем все поля ввода для размеров
+      if (currentProductType === 'bed') {
+        document.getElementById('width').value = '';
+        document.getElementById('depth').value = '';
+        document.getElementById('height').value = '';
+      } else {
+        document.getElementById('bed-width').value = '';
+        document.getElementById('bed-length').value = '';
+        document.getElementById('tsarga-height').value = '';
+        document.getElementById('headboard-height').value = '';
+      }
+      
+      // Сбрасываем дополнительные опции кровати
+      if (currentProductType !== 'bed') {
+        document.querySelectorAll('.multi-select-item.selected').forEach(item => {
+          if (item.dataset.type === 'linen-box' || item.dataset.type === 'lift-mechanism') {
+            item.classList.remove('selected');
+          }
+        });
+        // Сбрасываем выбор основания кровати
+        document.getElementById('base-type').value = '1';
+        
+        // Также нужно обновить кастомный селект
+        const baseTypeSelect = document.querySelector('#base-type + .custom-select .select-selected');
+        if (baseTypeSelect) {
+          baseTypeSelect.textContent = 'Стандартное';
+        }
+      }
+      
+      // Принудительно обновляем расчет
+      calculatePrice();
+    }
+
+    // ==================== МУЛЬТИ-ВЫБОР ОПЦИЙ ====================
+    document.querySelectorAll('.multi-select-item').forEach(item => {
+      if (item.id === 'carriage-option') return;
+      item.addEventListener('click', function() {
+        this.classList.toggle('selected');
+        calculatePrice();
+      });
+    });
+
+    // ==================== ЛИСТЕНЕРЫ ДЛЯ INPUT/SELECT ====================
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('change', calculatePrice);
+      el.addEventListener('input', calculatePrice);
+    });
+
+    // ==================== ВСПОМОГАТЕЛЬНЫЕ РАСЧЁТЫ ====================
+    function calculateProductArea() {
+      let area = 0;
+      if (currentProductType === 'bed') {
+        const bw = parseFloat(document.getElementById('bed-width').value) || 0;
+        const bl = parseFloat(document.getElementById('bed-length').value) || 0;
+        // Если оба размера больше 0, вычисляем площадь
+        if (bw > 0 && bl > 0) {
+          area = (bw * bl) / 1_000_000;
+        }
+      } else {
+        const w = parseFloat(document.getElementById('width').value) || 0;
+        const d = parseFloat(document.getElementById('depth').value) || 0;
+        if (w > 0 && d > 0) {
+          area = (w * d) / 1_000_000;
+        }
+      }
+      return area;
+    }
+
+    // ==================== ОСНОВНАЯ ФУНКЦИЯ РАСЧЕТА ТКАНИ ====================
+    function calculateFabricConsumption(
+  width, depth, height, armrests,
+  backPillows, decorPillows, seatPillows,
+  mechanismValue, hasCarriage, isLeather,
+  isBed = false
+) {
+  let fabricM = 0;
+  let fabricUnit = isLeather ? "м²" : "пог. м";
+
+  if (isBed) {
+    // ----- НОВЫЙ расчёт для кровати -----
+    // Ширина/длина приходят в мм.
+    const headboardHeight = parseFloat(document.getElementById('headboard-height')?.value) || 0; // мм
+    const tsargaHeight    = parseFloat(document.getElementById('tsarga-height')?.value) || 0;    // мм
+
+    // 1) Изголовье — берём ТОЛЬКО лицевую сторону
+    const headboardAreaM2 = (width * headboardHeight) / 1_000_000; // м²
+
+    // 2) Царги — три стороны (две боковые + изножье), как обсуждали
+    const tsargaLenM = (2 * width + depth) / 1000;                  // м
+    const tsargaAreaM2 = tsargaLenM * (tsargaHeight / 1000);        // м²
+
+    // 3) Сумма площадей + припуски (≈15%)
+    let baseAreaM2 = (headboardAreaM2 + tsargaAreaM2) * 1.15;
+
+    if (isLeather) {
+      // Для кожи считаем в м² и умножаем коэффициент
+      fabricUnit = "м²";
+      const kLeather = hasCarriage ? 1.8 : 1.3;
+      fabricM = baseAreaM2 * kLeather;
+    } else {
+      // Для ткани переводим площадь в погонные метры при ширине рулона ~1.4 м
+      const runPerMeter = CONFIG.FABRIC_CONSUMPTION?.BASE_DIVIDER || 1.4;
+      fabricM = baseAreaM2 / runPerMeter;
+
+      // Каретная стяжка даёт усложнение/запас
+      if (hasCarriage) {
+        const kCarr = CONFIG.FABRIC_CONSUMPTION?.CARRIAGE_MULTIPLIER || 1.5;
+        fabricM *= kCarr;
+      }
+    }
+
+    // Минимальный здравый расход
+    if (fabricM < 3) fabricM = 3;
+
+    // Округляем вверх до целого
+    fabricM = Math.ceil(fabricM);
+    return { amount: fabricM, unit: fabricUnit };
+  }
+
+  // ----- СТАРЫЙ расчёт для диванов/кресел — без изменений -----
+  let additionalM =
+    (parseInt(backPillows) || 0) * (CONFIG.FABRIC_CONSUMPTION.PILLOW_BACK || 2) +
+    (parseInt(seatPillows) || 0) * (CONFIG.FABRIC_CONSUMPTION.PILLOW_SEAT || 2) +
+    (parseInt(decorPillows) || 0) * (CONFIG.FABRIC_CONSUMPTION.PILLOW_DECOR || 1) +
+    (parseInt(armrests) || 0)     * (CONFIG.FABRIC_CONSUMPTION.ARMREST || 2);
+
+  if (String(mechanismValue) === "3000") {
+    additionalM += CONFIG.FABRIC_CONSUMPTION.MECHANISM_BOOK || 4;
+  } else if (String(mechanismValue) === "3500") {
+    additionalM += CONFIG.FABRIC_CONSUMPTION.MECHANISM_TIC_TAC || 4;
+  }
+
+  const surfaceArea =
+    2 * (width * height) +  // перед/зад спинки
+    2 * (depth * height) +  // боковины
+    (width * depth);        // сиденье/основание
+
+  const surfaceM2 = surfaceArea / 1_000_000;
+
+  if (isLeather) {
+    const baseRun = surfaceM2 / (CONFIG.FABRIC_CONSUMPTION.BASE_DIVIDER || 1.4);
+    const kLeather = hasCarriage
+      ? (CONFIG.FABRIC_CONSUMPTION.LEATHER_CARRIAGE || 2.4)
+      : (CONFIG.FABRIC_CONSUMPTION.LEATHER_MULTIPLIER || 1.6);
+    fabricM = (baseRun + additionalM) * kLeather;
+    fabricUnit = "м²"; // кожу обычно считают по площади
+  } else {
+    fabricM = (surfaceM2 / (CONFIG.FABRIC_CONSUMPTION.BASE_DIVIDER || 1.4)) + additionalM;
+    if (hasCarriage) {
+      fabricM *= (CONFIG.FABRIC_CONSUMPTION.CARRIAGE_MULTIPLIER || 1.5);
+    }
+  }
+
+  fabricM = Math.ceil(fabricM);
+  return { amount: fabricM, unit: fabricUnit };
+}
+
+
+    function updateMaterialsList(materialDetails, fabricConsumption, supportsCost, puLayers, mechanismCost, decorationCost, selectedOptions, fabricText) {
+      const list = document.getElementById('materials-list');
+      list.innerHTML = '';
+      
+      if (puLayers.length > 0) {
+        const totalWeight = puLayers.reduce((sum, layer) => sum + parseFloat(layer.weight), 0);
+        list.innerHTML += `<div><span>ППУ:</span><span>${puLayers.length} слоя, ${totalWeight.toFixed(2)} кг</span></div>`;
+      }
+      
+      let materialName = "Ткань";
+      if (fabricText.includes("кожа") || fabricText.includes("Кожа")) {
+        materialName = "Кожа";
+      }
+      
+	  // Доп. опции с фиксированной стоимостью -> в список материалов
+if (Array.isArray(selectedOptions) && selectedOptions.length) {
+  selectedOptions.forEach(opt => {
+    const name = (opt.text || 'Опция').trim();
+    const cost = Number(opt.cost) || 0;
+    if (cost > 0) {
+      list.innerHTML += `<div><span>${name}:</span><span>${Math.round(cost)} ₽</span></div>`;
+    }
+  });
+}
+
+	  
+      if (fabricConsumption.amount > 0) {
+        list.innerHTML += `<div><span>${materialName}:</span><span>${fabricConsumption.amount.toFixed(1)} ${fabricConsumption.unit}</span></div>`;
+      }
+      
+      if (materialDetails.plywoodSheets > 0) list.innerHTML += `<div><span>Фанера:</span><span>${materialDetails.plywoodSheets.toFixed(1)} листов</span></div>`;
+      if (materialDetails.dspSheets > 0) list.innerHTML += `<div><span>ДСП:</span><span>${materialDetails.dspSheets.toFixed(1)} листов</span></div>`;
+      if (materialDetails.metal > 0) list.innerHTML += `<div><span>Металлопрофиль:</span><span>${materialDetails.metal.toFixed(1)} м</span></div>`;
+      if (materialDetails.metalPlywood > 0) list.innerHTML += `<div><span>Фанера для металлокаркаса:</span><span>${materialDetails.metalPlywood.toFixed(1)} м²</span></div>`;
+      if (materialDetails.dvpSheets > 0) list.innerHTML += `<div><span>ДВП 3.2 мм:</span><span>${materialDetails.dvpSheets.toFixed(1)} листов (${materialDetails.dvpArea.toFixed(2)} м²)</span></div>`;
+      if (supportsCost > 0) list.innerHTML += `<div><span>Опоры:</span><span>${supportsCost.toFixed(0)} ${CONFIG.DISPLAY.CURRENCY}</span></div>`;
+      
+      // Добавляем информацию об основании кровати, если есть
+      if (foundationCost > 0) {
+        list.innerHTML += `<div><span>Основание кровати:</span><span>${foundationCost.toFixed(0)} ${CONFIG.DISPLAY.CURRENCY}</span></div>`;
+      }
+      
+      // Добавляем информацию о механизме, если есть
+      if (mechanismCost > 0) {
+        const mechanismSelect = document.getElementById('mechanism');
+        const selectedOption = mechanismSelect.options[mechanismSelect.selectedIndex];
+        let mechanismText = selectedOption.textContent;
+        if (mechanismCost === 3000 && mechanismText === "Еврокнижка") {
+          const selectedCustomItem = document.querySelector('.custom-select #mechanism + .custom-select .select-items .select-item.selected');
+          if (selectedCustomItem && selectedCustomItem.textContent.includes("Дельфин")) {
+            mechanismText = "Дельфин";
+          }
+        }
+        list.innerHTML += `<div><span>${mechanismText}:</span><span>${mechanismCost.toFixed(0)} ${CONFIG.DISPLAY.CURRENCY}</span></div>`;
+      }
+     
+      
+      if (!list.innerHTML) list.innerHTML = '<div>Материалы не выбраны</div>';
+      
+      setHTMLIfExists('materials-list-m', list.innerHTML);
+    }
+
+    // ==================== ОСНОВНОЙ РАСЧЁТ ====================
+    function calculatePrice() {
+      // Расчет стоимости основания кровати
+      if (currentProductType === 'bed') {
+        const baseType = parseFloat(document.getElementById('base-type').value) || 1;
+        const foundationWidth = parseFloat(document.getElementById('foundation-width').value) || 0;
+        const foundationLength = parseFloat(document.getElementById('foundation-length').value) || 0;
+        
+        if (foundationWidth > 0 && foundationLength > 0) {
+          const foundationArea = (foundationWidth * foundationLength) / 1000000; // площадь в м²
+          const basePricePerSqM = baseType === 1.2 ? 1500 : baseType === 1.4 ? 2000 : 1000;
+          foundationCost = foundationArea * basePricePerSqM;
+        } else {
+          foundationCost = 0;
+        }
+      } else {
+        foundationCost = 0;
+      }
+      
+      // Получаем правильные размеры в зависимости от типа изделия
+      let usedWidth = 0;
+      let usedDepth = 0;
+      let usedHeight = 0;
+      let usedArmrests = 0;
+      
+      if (currentProductType === 'bed') {
+        usedWidth = parseFloat(document.getElementById('bed-width').value) || 0;
+        usedDepth = parseFloat(document.getElementById('bed-length').value) || 0;
+        usedHeight = parseFloat(document.getElementById('tsarga-height').value) || 0;
+        usedArmrests = 0;
+        
+        // Если размеры кровати не введены, сбрасываем все значения к 0
+        if (usedWidth === 0 || usedDepth === 0) {
+          setTextIfExists('total-cost', `0 ${CONFIG.DISPLAY.CURRENCY}`);
+          setTextIfExists('sale-price', `0 ${CONFIG.DISPLAY.CURRENCY}`);
+          setTextIfExists('profit', `0 ${CONFIG.DISPLAY.CURRENCY}`);
+          setTextIfExists('fabric-usage', `0 ${CONFIG.DISPLAY.FABRIC_UNIT}`);
+          
+          setTextIfExists('cost-materials', `0 ${CONFIG.DISPLAY.CURRENCY}`);
+          setTextIfExists('cost-labor', `0 ${CONFIG.DISPLAY.CURRENCY}`);
+          setTextIfExists('cost-pu', `0 ${CONFIG.DISPLAY.CURRENCY}`);
+          setTextIfExists('cost-options', `0 ${CONFIG.DISPLAY.CURRENCY}`);
+          setTextIfExists('cost-total', `0 ${CONFIG.DISPLAY.CURRENCY}`);
+          
+          setTextIfExists('mobile-card-cost', `0 ${CONFIG.DISPLAY.CURRENCY}`);
+          setTextIfExists('mobile-card-price', `0 ${CONFIG.DISPLAY.CURRENCY}`);
+          setTextIfExists('mobile-card-profit', `0 ${CONFIG.DISPLAY.CURRENCY}`);
+          setTextIfExists('mobile-card-fabric', `0 ${CONFIG.DISPLAY.FABRIC_UNIT}`);
+          
+          setHTMLIfExists('materials-list', '<div>Материалы не выбраны</div>');
+          setHTMLIfExists('materials-list-m', '<div>Материалы не выбраны</div>');
+          return;
+        }
+      } else {
+        usedWidth = parseFloat(document.getElementById('width').value) || 0;
+        usedDepth = parseFloat(document.getElementById('depth').value) || 0;
+        usedHeight = parseFloat(document.getElementById('height').value) || 0;
+        usedArmrests = parseInt(document.getElementById('armrests').value) || 0;
+      }
+      
+      const laborFrame = parseFloat(document.getElementById('labor-frame').value) || 0;
+      const laborForming = parseFloat(document.getElementById('labor-forming').value) || 0;
+      const laborSewing = parseFloat(document.getElementById('labor-sewing').value) || 0;
+      const laborUpholstery = parseFloat(document.getElementById('labor-upholstery').value) || 0;
+      const laborDelivery = parseFloat(document.getElementById('labor-delivery').value) || 0;
+      const totalLabor = laborFrame + laborForming + laborSewing + laborUpholstery + laborDelivery;
+      
+      const mechanismCost = parseFloat(document.getElementById('mechanism').value) || 0;
+      const mechanismValue = document.getElementById('mechanism').value;
+      
+      let decorationCost = 0;
+      let hasCarriage = false;
+      const selectedOptions = [];
+      
+      // Обработка опций кровати
+      let linenBoxCost = 0;
+      let liftMechanismCost = 0;
+      
+      document.querySelectorAll('.multi-select-item.selected').forEach(item => {
+        const optionValue = parseFloat(item.dataset.value);
+        const optionType = item.dataset.type;
+        const optionText = item.querySelector('.label').textContent;
+        
+        if (optionType === 'carriage') {
+          hasCarriage = true;
+          decorationCost += optionValue;
+        } else if (optionType === 'buttons') {
+          decorationCost += CONFIG.DECORATION.BUTTONS;
+          selectedOptions.push({ text: optionText, cost: CONFIG.DECORATION.BUTTONS });
+        } else if (optionType === 'nails') {
+          decorationCost += CONFIG.DECORATION.NAILS;
+          selectedOptions.push({ text: optionText, cost: CONFIG.DECORATION.NAILS });
+        } else if (['stitching','tufting','piping'].includes(optionType)) {
+          decorationCost += CONFIG.DECORATION.STITCHING;
+        } else if (optionType === 'linen-box') {
+          // Бельевой ящик: добавляем 1 лист ДСП и его стоимость
+          linenBoxCost = CONFIG.SHEET_MATERIALS.DSP + CONFIG.BED.HARDWARE.LINEN_BOX;
+          selectedOptions.push({ text: optionText, cost: linenBoxCost });
+      } else if (optionType === 'lift-mechanism') {
+   // Подъемный механизм
+   liftMechanismCost = CONFIG.BED.HARDWARE.LIFTING_MECHANISM;
+   selectedOptions.push({ text: optionText, cost: liftMechanismCost });
+} else {
+   // Любая «доп. опция» с фикс-ценой
+   decorationCost += optionValue;
+   selectedOptions.push({ text: optionText, cost: optionValue });
+}
+      });
+      
+      const supportsCost = parseFloat(document.getElementById('supports-type').value) || 0;
+      
+      const puCost = puLayers.reduce((sum, layer) => sum + parseFloat(layer.cost), 0);
+      
+      const productArea = calculateProductArea();
+      
+      const frameType = document.getElementById('frame-type').value;
+      let frameCost = 0;
+      let materialDetails = {
+        plywoodSheets: 0,
+        dspSheets: 0,
+        metal: 0,
+        metalPlywood: 0,
+        dvpSheets: 0,
+        dvpArea: 0
+      };
+      
+      let dvpCost = 0;
+      
+      if (frameType === 'plywood' || frameType === 'dsp' || frameType === 'metal') {
+        const bedWidthVal = parseFloat(document.getElementById('bed-width')?.value) || 0;
+        const bedLengthVal = parseFloat(document.getElementById('bed-length')?.value) || 0;
+        const tsargaHeightVal = parseFloat(document.getElementById('tsarga-height')?.value) || 0;
+        const headboardHeightVal = parseFloat(document.getElementById('headboard-height')?.value) || 0;
+        
+        const dvp = calculateDVPConsumption({
+          currentProductType,
+          width: usedWidth, depth: usedDepth, height: usedHeight, armrests: usedArmrests,
+          bedWidth: bedWidthVal,
+          bedLength: bedLengthVal,
+          tsargaHeight: tsargaHeightVal,
+          headboardHeight: headboardHeightVal
+        });
+        
+        materialDetails.dvpSheets = dvp.dvpSheets;
+        materialDetails.dvpArea = dvp.dvpArea_m2;
+        dvpCost = materialDetails.dvpSheets * CONFIG.SHEET_MATERIALS.DVP;
+      }
+      
+      if (frameType === 'plywood') {
+        materialDetails.plywoodSheets = productArea * CONFIG.FRAME_MATERIALS.PLYWOOD.consumption;
+        frameCost = materialDetails.plywoodSheets * CONFIG.FRAME_MATERIALS.PLYWOOD.pricePerSheet;
+      } else if (frameType === 'dsp') {
+        materialDetails.dspSheets = productArea * CONFIG.FRAME_MATERIALS.DSP.consumption;
+        frameCost = materialDetails.dspSheets * CONFIG.FRAME_MATERIALS.DSP.pricePerSheet;
+      } else if (frameType === 'metal') {
+        materialDetails.metal = productArea * CONFIG.FRAME_MATERIALS.METAL.profileConsumption;
+        materialDetails.metalPlywood = productArea * CONFIG.FRAME_MATERIALS.METAL.plywoodConsumption;
+        frameCost = (materialDetails.metal * CONFIG.FRAME_MATERIALS.METAL.profilePrice) +
+                    (materialDetails.metalPlywood * (CONFIG.FRAME_MATERIALS.PLYWOOD.pricePerSheet / CONFIG.MATERIAL_AREAS.PLYWOOD));
+      }
+      
+      // Добавляем стоимость бельевого ящика (дополнительный лист ДСП)
+      if (linenBoxCost > 0) {
+        materialDetails.dspSheets += 1;
+        frameCost += CONFIG.SHEET_MATERIALS.DSP;
+      }
+      
+      const fabricPrice = parseFloat(document.getElementById('fabric-type').value) || 0;
+      const fabricText = document.getElementById('fabric-type').selectedOptions[0]?.text || "";
+      const isLeather = fabricText.includes("кожа") || fabricText.includes("Кожа");
+      
+      let fabricArea = 0;
+      let fabricCost = 0;
+      let fabricConsumption = { amount: 0, unit: "пог. м" };
+      
+      if (fabricPrice > 0 && usedWidth > 0 && usedDepth > 0) {
+        const backPillows = parseInt(document.getElementById('back-pillows').value) || 0;
+        const decorPillows = parseInt(document.getElementById('decor-pillows').value) || 0;
+        const seatPillows = parseInt(document.getElementById('seat-pillows').value) || 0;
+        
+        fabricConsumption = calculateFabricConsumption(
+          usedWidth, usedDepth, usedHeight, usedArmrests,
+          backPillows, decorPillows, seatPillows,
+          mechanismValue, hasCarriage, isLeather,
+          currentProductType === 'bed'
+        );
+        
+        fabricArea = fabricConsumption.amount;
+        fabricCost = fabricArea * fabricPrice;
+      }
+      
+      // Суммируем все стоимости материалов
+      let materialsCost = frameCost + fabricCost + dvpCost + supportsCost + foundationCost + linenBoxCost + liftMechanismCost;
+      
+      // Добавляем стоимость механизма к материалам
+      materialsCost += mechanismCost;
+      
+      const margin = parseFloat(document.getElementById('margin').value) || CONFIG.MARGIN.DEFAULT;
+      const marginMultiplier = 1 + (margin / 100);
+      
+      const totalCost = materialsCost + totalLabor + puCost + decorationCost;
+      const salePrice = totalCost * marginMultiplier;
+      const profit = salePrice - totalCost;
+      
+      // Обновляем отображение
+      setTextIfExists('total-cost', `${Math.round(totalCost).toLocaleString()} ${CONFIG.DISPLAY.CURRENCY}`);
+      setTextIfExists('sale-price', `${Math.round(salePrice).toLocaleString()} ${CONFIG.DISPLAY.CURRENCY}`);
+      setTextIfExists('profit', `${Math.round(profit).toLocaleString()} ${CONFIG.DISPLAY.CURRENCY}`);
+      setTextIfExists('fabric-usage', `${fabricArea.toFixed(1)} ${fabricConsumption.unit}`);
+      
+      setTextIfExists('cost-materials', `${Math.round(materialsCost).toLocaleString()} ${CONFIG.DISPLAY.CURRENCY}`);
+      setTextIfExists('cost-labor', `${Math.round(totalLabor).toLocaleString()} ${CONFIG.DISPLAY.CURRENCY}`);
+      setTextIfExists('cost-pu', `${Math.round(puCost).toLocaleString()} ${CONFIG.DISPLAY.CURRENCY}`);
+      setTextIfExists('cost-options', `${Math.round(decorationCost).toLocaleString()} ${CONFIG.DISPLAY.CURRENCY}`);
+      setTextIfExists('cost-total', `${Math.round(totalCost).toLocaleString()} ${CONFIG.DISPLAY.CURRENCY}`);
+      
+      // Обновляем список материалов
+      updateMaterialsList(materialDetails, fabricConsumption, supportsCost, puLayers, mechanismCost, decorationCost, selectedOptions, fabricText);
+      
+      // Обновляем мобильные карточки
+      setTextIfExists('mobile-card-cost', `${Math.round(totalCost).toLocaleString()} ${CONFIG.DISPLAY.CURRENCY}`);
+      setTextIfExists('mobile-card-price', `${Math.round(salePrice).toLocaleString()} ${CONFIG.DISPLAY.CURRENCY}`);
+      setTextIfExists('mobile-card-profit', `${Math.round(profit).toLocaleString()} ${CONFIG.DISPLAY.CURRENCY}`);
+      setTextIfExists('mobile-card-fabric', `${fabricArea.toFixed(1)} ${fabricConsumption.unit}`);
+    }
+
+    // ==================== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ ====================
+    document.addEventListener('DOMContentLoaded', function() {
+      initCustomSelects();
+      
+      // Инициализация слайдера наценки
+      const marginSlider = document.getElementById('margin');
+      const marginValue = document.getElementById('margin-value');
+      
+      marginSlider.addEventListener('input', function() {
+        marginValue.textContent = `${this.value}%`;
+        calculatePrice();
+      });
+      
+      // Первоначальный расчет
+      calculatePrice();
+    });
+  </script>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+<script>
+// Функция расчета ткани для кровати
+function calculateBedFabricConsumption() {
+    const width = parseFloat(document.getElementById('bed-width').value) || 0;
+    const length = parseFloat(document.getElementById('bed-length').value) || 0;
+    const tsargaHeight = parseFloat(document.getElementById('tsarga-height').value) || 0;
+    const headboardHeight = parseFloat(document.getElementById('headboard-height').value) || 0;
+    
+    if (width === 0 || length === 0 || tsargaHeight === 0 || headboardHeight === 0) {
+        return { amount: 0, unit: "пог. м" };
+    }
+    
+    // Припуск на загиб и крепление (5 см с каждой стороны)
+    const allowance = 0.05;
+    
+    // Расчет для изголовья
+    const headboardFabric = (width / 1000 + 2 * allowance);
+    
+    // Расчет для изножья и двух царг
+    const tsargaFabric = (length / 1000 + 2 * allowance);
+    
+    // Общий расход ткани
+    let fabricM = headboardFabric + tsargaFabric;
+    
+    // Проверяем, является ли ткань кожей (для увеличения расхода)
+    const fabricText = document.getElementById('fabric-type').selectedOptions[0]?.text || "";
+    const isLeather = fabricText.includes("кожа") || fabricText.includes("Кожа");
+    
+    // Проверяем, есть ли каретная стяжка
+    const hasCarriage = document.getElementById('carriage-option').classList.contains('selected');
+    
+    // Учет материала (кожа требует больше ткани)
+    if (isLeather) {
+        let leatherK = hasCarriage ? 1.8 : 1.3;
+        fabricM *= leatherK;
+    }
+    
+    // Обеспечим минимальный расход ткани для кровати
+    if (fabricM < 3) {
+        fabricM = 3;
+    }
+    
+    fabricM = Math.ceil(fabricM);
+    return { amount: fabricM, unit: "пог. м" };
+}
+
+// Обновляем основную функцию расчета
+function updateCalculatePrice() {
+    // ... существующий код расчета ...
+    
+    // Заменяем расчет ткани для кровати
+    if (currentProductType === 'bed') {
+        fabricConsumption = calculateBedFabricConsumption();
+        fabricArea = fabricConsumption.amount;
+        fabricCost = fabricArea * fabricPrice;
+    }
+    
+    // ... остальной код функции ...
+}
+
+
+};
+
+// Инициализируем при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    calculatePrice();
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+   
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <script>
+(function(){
+  // ====== НАСТРОЙКИ: добавь/поправь селекторы при необходимости ============
+  const CANDIDATES = {
+    cost: [
+      '#mfgCost', '#manufacturingCost', '#totalCost', '#total-cost', '#finalCost', '#final-cost',
+      '.total-cost .value', '.summary-cost .value', '.cost .value', '[data-metric="cost"]'
+    ],
+    price: [
+      '#finalPrice', '#totalPrice', '#total-price', '#retailPrice', '#retail-price',
+      '.summary-price .value', '.price .value', '[data-metric="price"]'
+    ],
+    fabric: [
+      '#fabricUsage', '#fabric-usage', '#fabric-total', '#total-fabric',
+      '.summary-fabric .value', '.fabric .value', '[data-metric="fabric"]'
+    ],
+    profit: [
+      '#profit', '#finalProfit', '#totalProfit', '#total-profit',
+      '.summary-profit .value', '.profit .value', '[data-metric="profit"]'
+    ],
+    // контейнер калькулятора чтобы слушать мутации
+    roots: ['#calculator', '.calculator', '#app', 'main', 'body']
+  };
+
+  // ====== ВСПОМОГАТЕЛЬНОЕ ===================================================
+  const getEl = (list) => {
+    for (const sel of list) {
+      const el = document.querySelector(sel);
+      if (el) return el;
+    }
+    return null;
+  };
+
+  const parseNum = (txt) => {
+    if (txt == null) return null;
+    const s = String(txt).replace(/\u00A0/g, ' ').replace(/[^\d,.\- ]+/g, '')
+                         .replace(/\s+/g, '');
+    // Приоритет RU-формата: 12 345,67
+    if (/,/.test(s) && /\.\d{3}$/.test(s) === false) {
+      return Number(s.replace(/\./g,'').replace(',','.')) || null;
+    }
+    return Number(s.replace(/,/g,'')) || null;
+  };
+
+  const readVal = (key) => {
+    // 1) Пробуем DOM-элементы
+    const el = getEl(CANDIDATES[key]);
+    if (el) {
+      const v = parseNum(el.getAttribute('data-value') ?? el.textContent ?? el.value);
+      if (v != null) return v;
+    }
+    // 2) Пробуем глобальные переменные если вдруг есть
+    if (window.totals && typeof window.totals[key] !== 'undefined') {
+      const v = Number(window.totals[key]);
+      if (!Number.isNaN(v)) return v;
+    }
+    return null;
+  };
+
+  // ====== СИНХРОНИЗАЦИЯ В БАР ===============================================
+  function pushToBar() {
+    // если функции из прошлого шага нет — создадим простую
+    if (typeof window.setMobileSummary !== 'function') {
+      window.setMobileSummary = function({cost, price, fabric, profit}){
+        const fmt = v => (typeof v === 'number' ? v.toLocaleString('ru-RU') : (v ?? '0'));
+        const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent = fmt(val); };
+        set('m-cost',   cost);
+        set('m-price',  price);
+        set('m-fabric', fabric);
+        set('m-profit', profit);
+      };
+    }
+
+    const cost   = readVal('cost');
+    const price  = readVal('price');
+    const fabric = readVal('fabric');
+    const profit = readVal('profit');
+
+    // Обновляем только найденные, остальные не трогаем
+    const curr = {
+      cost  : (cost   != null ? cost   : null),
+      price : (price  != null ? price  : null),
+      fabric: (fabric != null ? fabric : null),
+      profit: (profit != null ? profit : null)
+    };
+    window.setMobileSummary(curr);
+  }
+
+  // ====== МУТАЦИИ + ФОЛБЭК ТАЙМЕР ===========================================
+  let observer;
+  function startObserver(){
+    if (observer) observer.disconnect();
+    const root = getEl(CANDIDATES.roots) || document.body;
+    observer = new MutationObserver(() => {
+      // троттлинг через rAF — без дерганий
+      cancelAnimationFrame(startObserver._rafId);
+      startObserver._rafId = requestAnimationFrame(pushToBar);
+    });
+    observer.observe(root, {subtree: true, childList: true, characterData: true, attributes: true});
+  }
+
+  // периодический фолбэк на случай, если калькулятор рисует через canvas/innerHTML пачкой
+  let tick = 0;
+  setInterval(() => {
+    tick = (tick + 1) % 6; // раз в ~3 секунды (при 500мс)
+    if (tick === 0) pushToBar();
+  }, 500);
+
+  // Автозапуск
+  window.addEventListener('load', () => {
+    startObserver();
+    pushToBar(); // начальная инициализация
+  });
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+(function(){
+  // ======= НАСТРОЙКИ (можно не трогать) ====================================
+  const IS_MOBILE = () => matchMedia('(max-width:1024px)').matches;
+  const TAB_SEL   = '[data-tab="filling"], #filling, [data-section="ppu"], #filling-tab';
+  const LABEL_RX  = /марка\s*ппу/i;
+  const TRIGGER_SEL = '.select-selected, .select-trigger, button';
+  const LIST_SEL    = '.select-items, .dropdown, .menu';
+  const GAP = 6;                    // зазор в пикселях
+  const MAX_VH = 0.6;               // максимум 60% высоты окна
+
+  // ======= ПОИСК ЦЕЛЕВОГО УЗЛА =============================================
+  function findPpuSelect(){
+    const tab = document.querySelector(TAB_SEL) || document;
+    // ищем .custom-select, у которого в ближайшем контейнере есть надпись "Марка ППУ"
+    const selects = tab.querySelectorAll('.custom-select');
+    for (const s of selects){
+      const box = s.closest('.field, .row, .form-group, .control, .input, .param, .line') || s.parentElement;
+      const label = box?.querySelector('label, .label, .title, .name');
+      const text = (label?.innerText || box?.innerText || '').trim().toLowerCase();
+      if (LABEL_RX.test(text)) return s;
+    }
+    // запасной вариант — первый .custom-select в табе
+    return tab.querySelector('.custom-select');
+  }
+
+  // ======= УТИЛИТЫ =========================================================
+  function isOpen(list){
+    const cs = getComputedStyle(list);
+    return list.classList.contains('active') || (cs.display!=='none' && cs.visibility!=='hidden' && cs.opacity!=='0');
+  }
+
+  // lock/unlock прокрутки страницы (с компенсацией скроллбара)
+  let bodyLock = null;
+  function lockBody(){
+    if (bodyLock) return;
+    const doc = document.documentElement;
+    const sbw = window.innerWidth - doc.clientWidth;
+    bodyLock = { overflow: document.body.style.overflow, pr: document.body.style.paddingRight };
+    document.body.style.overflow = 'hidden';
+    if (sbw > 0) document.body.style.paddingRight = sbw + 'px';
+  }
+  function unlockBody(){
+    if (!bodyLock) return;
+    document.body.style.overflow = bodyLock.overflow || '';
+    document.body.style.paddingRight = bodyLock.pr || '';
+    bodyLock = null;
+  }
+
+  // ======= ОСНОВНАЯ ЛОГИКА =================================================
+  function setup(){
+    const sel = findPpuSelect();
+    if (!sel) return;
+    const trigger = sel.querySelector(TRIGGER_SEL);
+    const list    = sel.querySelector(LIST_SEL);
+    if (!trigger || !list) return;
+
+    let fixed = false;
+    let onReposition = null;
+
+    function measure(){
+      const r = trigger.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const desired = Math.min(Math.max(list.scrollHeight, 200), Math.floor(vh * MAX_VH));
+      const spaceBelow = vh - r.bottom - GAP;
+      const spaceAbove = r.top - GAP;
+      const openUp = (spaceBelow < desired) && (spaceAbove > spaceBelow);
+      const maxH = Math.max(140, Math.min(desired, openUp ? spaceAbove : spaceBelow));
+      return { r, vh, openUp, maxH };
+    }
+
+    function applyFixed(){
+      if (IS_MOBILE() || fixed === true || !isOpen(list)) return;
+
+      // внутренний скролл выпадашки
+      list.style.overflowY = 'auto';
+      list.style.webkitOverflowScrolling = 'touch';
+      list.style.overscrollBehavior = 'contain';
+      // позиционирование
+      const { r, vh, openUp, maxH } = measure();
+      Object.assign(list.style, {
+        position: 'fixed',
+        left: Math.round(r.left) + 'px',
+        width: Math.round(r.width) + 'px',
+        zIndex: 9999,
+        maxHeight: Math.round(maxH) + 'px'
+      });
+      if (openUp) { list.style.top='auto'; list.style.bottom = Math.round(vh - r.top + GAP) + 'px'; }
+      else        { list.style.bottom='auto'; list.style.top = Math.round(r.bottom + GAP) + 'px'; }
+
+      // блокируем прокрутку страницы, пока открыто меню
+      lockBody();
+
+      // колёсико и тач — скроллим только список
+      const onWheel = e => { 
+        const before = list.scrollTop;
+        list.scrollTop += e.deltaY;
+        if (list.scrollTop !== before) { e.preventDefault(); e.stopPropagation(); }
+        else {
+          // на краях — тоже не даём странице уехать
+          e.preventDefault(); e.stopPropagation();
+        }
+      };
+      let tsY=0, start=0;
+      const onTs = e => { if(!e.touches?.length) return; tsY=e.touches[0].clientY; start=list.scrollTop; };
+      const onTm = e => {
+        if(!e.touches?.length) return;
+        const dy = tsY - e.touches[0].clientY;
+        const before = list.scrollTop;
+        list.scrollTop = start + dy;
+        if (list.scrollTop !== before) { e.preventDefault(); e.stopPropagation(); }
+        else { e.preventDefault(); e.stopPropagation(); }
+      };
+      const onKey = e => {
+        const keys = ['ArrowDown','ArrowUp','PageDown','PageUp','Home','End',' '];
+        if (!keys.includes(e.key)) return;
+        let delta = 0;
+        if (e.key==='ArrowDown') delta = 40;
+        else if (e.key==='ArrowUp') delta = -40;
+        else if (e.key==='PageDown' || e.key===' ') delta = list.clientHeight - 20;
+        else if (e.key==='PageUp') delta = -(list.clientHeight - 20);
+        else if (e.key==='Home') delta = -1e9;
+        else if (e.key==='End')  delta =  1e9;
+        const before = list.scrollTop;
+        list.scrollTop += delta;
+        if (list.scrollTop !== before) { e.preventDefault(); e.stopPropagation(); }
+      };
+
+      // навешиваем один раз на конкретный список
+      if (!list.dataset._ppuHandlers){
+        list.addEventListener('wheel', onWheel, {passive:false});
+        list.addEventListener('touchstart', onTs, {passive:false});
+        list.addEventListener('touchmove',  onTm, {passive:false});
+        list.addEventListener('keydown',    onKey, {passive:false});
+        list.setAttribute('tabindex','-1');
+        list.dataset._ppuHandlers = '1';
+      }
+
+      // репозиционирование
+      onReposition = () => {
+        if (!isOpen(list)) { clearFixed(); return; }
+        const { r, vh, openUp, maxH } = measure();
+        list.style.left = Math.round(r.left) + 'px';
+        list.style.width= Math.round(r.width) + 'px';
+        list.style.maxHeight = Math.round(maxH) + 'px';
+        if (openUp) { list.style.top='auto'; list.style.bottom = Math.round(vh - r.top + GAP) + 'px'; }
+        else        { list.style.bottom='auto'; list.style.top = Math.round(r.bottom + GAP) + 'px'; }
+      };
+      addEventListener('scroll', onReposition, {passive:true});
+      addEventListener('resize', onReposition, {passive:true});
+
+      fixed = true;
+      // сфокусируем для клавиатуры
+      list.focus();
+    }
+
+    function clearFixed(){
+      if (!fixed) return;
+      // снять стили
+      ['position','left','top','bottom','width','zIndex','maxHeight','overflowY','overscrollBehavior','webkitOverflowScrolling']
+        .forEach(p=> list.style[p]='');
+      // отписаться
+      removeEventListener('scroll', onReposition);
+      removeEventListener('resize', onReposition);
+      onReposition = null;
+      // вернуть прокрутку страницы
+      unlockBody();
+      fixed = false;
+    }
+
+    // клик по триггеру: даём «родной» логике открыть/закрыть, затем наш фикс
+    trigger.addEventListener('click', () => {
+      requestAnimationFrame(() => { if (isOpen(list)) applyFixed(); else clearFixed(); });
+    });
+
+    // выбор пункта — закрыть после выбора
+    list.addEventListener('click', (e) => {
+      const item = e.target.closest('div, li, .option, .select-item');
+      if (item) setTimeout(clearFixed, 0);
+    });
+
+    // клик вне — закрыть
+    document.addEventListener('click', (e) => {
+      if (!fixed) return;
+      if (sel.contains(e.target)) return;          // клики внутри поля ППУ
+      if (e.target.closest(LIST_SEL) === list) return; // клики по самому списку
+      clearFixed();
+    }, true);
+
+    // Escape — закрыть
+    document.addEventListener('keydown', (e) => {
+      if (!fixed) return;
+      if (e.key === 'Escape') { clearFixed(); }
+    });
+
+    // если сторонний код меняет класс/стиль — подстроимся
+    const mo = new MutationObserver(() => {
+      if (IS_MOBILE()) return;
+      if (isOpen(list)) applyFixed(); else clearFixed();
+    });
+    mo.observe(list, {attributes:true, attributeFilter:['class','style']});
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setup, {once:true});
+  } else { setup(); }
+})();
+</script>
+
+
+
+
+
+
+    
+
+    
+ 
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=103917176', 'ym');
+
+    ym(103917176, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/103917176" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+  
+  
+  
+  
+  
+  <script src="https://sofany.pro/guard/sofany-gate.js" defer></script>
+
+  
+<script>
+(function () {
+  // Граница мобилок — ничего не трогаем там (у вас уже есть фикс-режим)
+  const isMobile = () => window.matchMedia('(max-width: 1024px)').matches;
+
+  function adjustDropdown(listEl, triggerEl) {
+    if (!listEl || !triggerEl) return;
+
+    // Сбрасываем инлайн-стили перед измерениями
+    listEl.style.top = '';
+    listEl.style.bottom = '';
+    listEl.style.maxHeight = '';
+    listEl.style.opacity = '';   // не мешаем анимациям
+    listEl.style.visibility = '';
+
+    const triggerRect = triggerEl.getBoundingClientRect();
+    const viewportH   = window.innerHeight;
+
+    // Ваша активная высота — до 260px; возьмем фактическую прокрутку
+    const desired = Math.min(260, Math.max(listEl.scrollHeight, 180));
+    const spaceBelow = viewportH - triggerRect.bottom - 8; // небольшой зазор
+    const spaceAbove = triggerRect.top - 8;
+
+    // Решаем куда открывать
+    const openUp = (spaceBelow < desired) && (spaceAbove > spaceBelow);
+
+    if (openUp) {
+      // Открываем вверх
+      listEl.style.top = 'auto';
+      listEl.style.bottom = 'calc(100% + 6px)';
+      listEl.style.maxHeight = Math.max(120, Math.min(desired, spaceAbove)) + 'px';
+    } else {
+      // Открываем вниз
+      listEl.style.bottom = 'auto';
+      listEl.style.top = 'calc(100% + 6px)';
+      listEl.style.maxHeight = Math.max(120, Math.min(desired, spaceBelow)) + 'px';
+    }
+  }
+
+  // Делегирование кликов по кастомным селектам
+  document.addEventListener('click', function (e) {
+    // На мобилках выходим — там свое фикс-позиционирование
+    if (isMobile()) return;
+
+    // Клик по "кнопке" селекта
+    const selectedBtn = e.target.closest('.select-selected');
+    if (selectedBtn) {
+      const wrapper = selectedBtn.closest('.custom-select');
+      const listEl  = wrapper ? wrapper.querySelector('.select-items') : null;
+
+      // Даем вашей логике активировать список (класс .active) и через тик — измеряем
+      requestAnimationFrame(() => {
+        if (listEl && listEl.classList.contains('active')) {
+          adjustDropdown(listEl, selectedBtn);
+        }
+      });
+      return;
+    }
+
+    // Клик по пункту — ничего особого не делаем, просто выходим
+  }, true);
+
+  // При ресайзе/скролле подгоняем открытую выпадашку (десктоп)
+  function reflowOpenDropdown() {
+    if (isMobile()) return;
+    const openList = document.querySelector('.select-items.active');
+    if (!openList) return;
+    const trigger = openList.closest('.custom-select')?.querySelector('.select-selected');
+    if (trigger) adjustDropdown(openList, trigger);
+  }
+
+  window.addEventListener('resize', reflowOpenDropdown, { passive: true });
+  window.addEventListener('scroll', reflowOpenDropdown, { passive: true });
+})();
+</script>
+
+
+<div class="mobile-financial-summary">
+  <div class="mcard --cost">
+    <div class="mcard-title">Себестоимость</div>
+    <div class="mcard-value" id="m-cost">0</div>
+  </div>
+  <div class="mcard --price">
+    <div class="mcard-title">Цена</div>
+    <div class="mcard-value" id="m-price">0</div>
+  </div>
+  <div class="mcard --fabric">
+    <div class="mcard-title">Ткань</div>
+    <div class="mcard-value" id="m-fabric">0</div>
+  </div>
+  <div class="mcard --profit">
+    <div class="mcard-title">Прибыль</div>
+    <div class="mcard-value" id="m-profit">0</div>
+  </div>
+</div>
+
+
+
+
+
+<script>
+(function(){
+  const TILE_SEL = '.multi-select-item[data-type="lift-mechanism"]';
+  const LIST_ID  = 'materials-list';
+  const ROW_CLASS = 'mat-lift-row';
+  const LABEL = 'Подъёмный механизм';
+
+  const $ = (s, r=document)=>r.querySelector(s);
+  const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
+
+  function materialsRoot(){ return document.getElementById(LIST_ID); }
+  function liftTile(){ return $(TILE_SEL); }
+
+  function isSelected(el){
+    if (!el) return false;
+    if (el.classList.contains('selected') || el.classList.contains('active')) return true;
+    if (el.getAttribute('aria-pressed') === 'true') return true;
+    if (el.getAttribute('data-selected') === 'true') return true;
+    return false;
+  }
+
+  function findRow(root){ return root && root.querySelector('.'+ROW_CLASS); }
+
+  function addRow(root){
+    const row = document.createElement('div');
+    row.className = ROW_CLASS;
+    const left = document.createElement('span');
+    const right = document.createElement('span');
+    left.textContent = LABEL + ':';
+    right.textContent = '5500';
+    row.append(left, right);
+    root.appendChild(row);
+  }
+
+  function sync(){
+    const root = materialsRoot();
+    const tile = liftTile();
+    if (!root || !tile) return;
+    const active = isSelected(tile);
+    const exists = findRow(root);
+    if (active && !exists) addRow(root);
+    if (!active && exists) exists.remove();
+  }
+
+  function wire(){
+    const tile = liftTile();
+    if (tile){
+      ['click','change','input'].forEach(ev =>
+        tile.addEventListener(ev, () => requestAnimationFrame(sync), {passive:true})
+      );
+      // если калькулятор меняет классы сам
+      const moTile = new MutationObserver(() => requestAnimationFrame(sync));
+      moTile.observe(tile, {attributes:true, attributeFilter:['class','aria-pressed','data-selected'], subtree:true});
+    }
+    const root = materialsRoot();
+    if (root){
+      const moList = new MutationObserver(() => requestAnimationFrame(sync));
+      moList.observe(root, {childList:true, subtree:false});
+    }
+    // страховочный тик на случай полной перерисовки DOM
+    setInterval(sync, 1000);
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', () => { wire(); sync(); }, {once:true});
+  } else {
+    wire(); sync();
+  }
+})();
+</script>
+
+
+
+
+
+
+<script>
+// АДАПТЕР: если есть PU_BRAND_DETAILS (объект), сконвертируем в CONFIG.PU_BRANDS (массив)
+(function(){
+  if (!window.CONFIG) window.CONFIG = {};
+  // если уже есть корректный массив — оставляем как есть
+  if (Array.isArray(CONFIG.PU_BRANDS) && CONFIG.PU_BRANDS.length) return;
+
+  const src = window.PU_BRAND_DETAILS; // твой объект из сообщения
+  if (!src || typeof src !== 'object') return;
+
+  // Превратим { "ST 2836": {density, pricePerKg}, ... } --> [{name, density, pricePerKg}, ...]
+  const arr = Object.entries(src).map(([name, v]) => ({
+    name,
+    density: Number(v?.density) || 0,
+    pricePerKg: Number(v?.pricePerKg) || 0
+  }));
+
+  // На всякий — сортируем по имени
+  arr.sort((a,b)=> a.name.localeCompare(b.name, 'ru'));
+
+  CONFIG.PU_BRANDS = arr;
+})();
+</script>
+
+
+
+
+
+
+
+<script>
+/* ==========================================================================
+   ЕДИНЫЙ СКРИПТ ПРЕДИКТИВНОГО ВВОДА ППУ
+   Работает с:
+   - #pu-predictive-input — поле ввода
+   - #pu-predictive-suggestions — контейнер выпадающих подсказок
+   - #pu-brand — скрытый <select>, откуда читает ваш обработчик добавления
+   - #add-pu-layer — кнопка "Добавить слой ППУ"
+   Требует CONFIG.PU_BRANDS (список марок) из основного скрипта.
+   ========================================================================== */
+(function(){
+  // --- узлы ---
+  const input     = document.getElementById('pu-predictive-input');
+  const box       = document.getElementById('pu-predictive-suggestions');
+  const hiddenSel = document.getElementById('pu-brand');
+  const addBtn    = document.getElementById('add-pu-layer');
+  if (!input || !box || !hiddenSel || !addBtn || !Array.isArray(CONFIG?.PU_BRANDS)) return;
+
+  // --- утилиты ---
+  const IS_MOBILE = () => matchMedia('(max-width:1024px)').matches;
+  const norm = s => String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
+  const onlyDigits = s => (String(s||'').match(/\d+/g)||[]).join(' ');
+  const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+
+  function highlight(text, q){
+    if (!q) return text;
+    try{
+      const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'ig');
+      return text.replace(rx, m=>`<b>${m}</b>`);
+    }catch(_){ return text; }
+  }
+
+  // --- наполнение hidden select (на всякий случай, если вдруг пуст) ---
+  (function ensureOptions(){
+    const hasAnyBrandOption = Array.from(hiddenSel.options).some(o => o.value && o.value !== '');
+    if (!hasAnyBrandOption){
+      hiddenSel.innerHTML = '<option value="">Выберите марку</option>';
+      CONFIG.PU_BRANDS.forEach(b=>{
+        const opt = document.createElement('option');
+        opt.value = b.name;
+        opt.textContent = `${b.name} (${b.density} кг/м³)`;
+        hiddenSel.appendChild(opt);
+      });
+    }
+  })();
+
+  function setHiddenByName(name){
+    const exact = CONFIG.PU_BRANDS.find(b => b.name === name);
+    if (exact){
+      hiddenSel.value = exact.name;
+      hiddenSel.dispatchEvent(new Event('change', {bubbles:true}));
+      return exact;
+    }
+    return null;
+  }
+
+  function findCandidates(query){
+    const q = norm(query);
+    if (!q) return [];
+    const qDigits = onlyDigits(q);
+    const scored = CONFIG.PU_BRANDS.map(b=>{
+      const name = norm(b.name);
+      const dens = String(b.density);
+      let score = 0;
+      if (name === q) score += 100;
+      if (name.startsWith(q)) score += 60;
+      if (name.includes(q))  score += 40;
+      if (qDigits && dens === qDigits) score += 35;
+      if (qDigits && dens.includes(qDigits)) score += 15;
+      return { b, score };
+    }).filter(x => x.score > 0);
+    scored.sort((a,b)=> b.score - a.score || a.b.name.localeCompare(b.b.name));
+    return scored.map(x=>x.b);
+  }
+
+  function openList(){
+    if (IS_MOBILE()) document.body.style.overflow = 'hidden';
+    box.classList.add('active');
+  }
+  function closeList(){
+    box.classList.remove('active');
+    if (IS_MOBILE()) document.body.style.overflow = '';
+  }
+
+  let state = { items: [], selectedIdx: -1 };
+
+  function renderList(items, query){
+    box.innerHTML = '';
+    if (!items.length){
+      box.innerHTML = `<div class="predictive-suggestion" style="opacity:.7;cursor:default">Ничего не найдено</div>`;
+      openList();
+      state.selectedIdx = -1;
+      return;
+    }
+    const q = norm(query);
+    const qDigits = onlyDigits(q);
+    items.forEach((b, i)=>{
+      const el = document.createElement('div');
+      el.className = 'predictive-suggestion';
+      el.setAttribute('role','option');
+      el.dataset.index = String(i);
+
+      const nameText = `${b.name}`;
+      const details  = `Плотность ${b.density} кг/м³ · ${b.pricePerKg} ₽/кг`;
+
+      el.innerHTML = `
+        <span class="suggestion-name">${highlight(nameText, q)}</span>
+        <span class="suggestion-details">
+          ${highlight(`Плотность ${b.density}`, qDigits || q)} кг/м³ · ${highlight(`${b.pricePerKg} ₽/кг`, q.replace(/[^\d]+/g,''))}
+        </span>
+      `;
+
+      el.addEventListener('mousedown', (e)=>{ // mousedown — чтобы blur не сработал раньше
+        e.preventDefault();
+        pick(b);
+      });
+
+      box.appendChild(el);
+    });
+    state.selectedIdx = -1;
+    openList();
+  }
+
+  function updateActive(){
+    const children = Array.from(box.querySelectorAll('.predictive-suggestion'));
+    children.forEach((el, idx)=>{
+      el.classList.toggle('selected', idx === state.selectedIdx);
+      if (idx === state.selectedIdx){
+        const r = el.getBoundingClientRect();
+        const br = box.getBoundingClientRect();
+        if (r.bottom > br.bottom) box.scrollTop += (r.bottom - br.bottom);
+        if (r.top < br.top)       box.scrollTop -= (br.top - r.top);
+      }
+    });
+  }
+
+  function pick(brand){
+    input.value = brand.name;
+    setHiddenByName(brand.name);
+    closeList();
+  }
+
+  const doSearch = debounce((v)=>{
+    state.items = v ? findCandidates(v) : CONFIG.PU_BRANDS.slice(0, 12);
+    renderList(state.items, v);
+  }, 120);
+
+  // --- события ввода/фокуса/клавиатуры ---
+  input.addEventListener('input', (e)=>{
+    const v = e.target.value;
+    doSearch(v);
+    if (!setHiddenByName(v)) hiddenSel.value = ''; // пока нет точного — не выбран
+  });
+
+  input.addEventListener('focus', ()=>{
+    const v = input.value;
+    state.items = v ? findCandidates(v) : CONFIG.PU_BRANDS.slice(0,12);
+    renderList(state.items, v);
+  });
+
+  input.addEventListener('keydown', (e)=>{
+    if (!box.classList.contains('active')) return;
+    const max = state.items.length - 1;
+    if (e.key === 'ArrowDown'){
+      e.preventDefault();
+      state.selectedIdx = Math.min(max, state.selectedIdx + 1);
+      updateActive();
+    } else if (e.key === 'ArrowUp'){
+      e.preventDefault();
+      state.selectedIdx = Math.max(0, state.selectedIdx - 1);
+      updateActive();
+    } else if (e.key === 'Enter'){
+      if (state.selectedIdx >= 0 && state.items[state.selectedIdx]){
+        e.preventDefault();
+        pick(state.items[state.selectedIdx]);
+      } else if (state.items.length === 1){
+        e.preventDefault();
+        pick(state.items[0]);
+      } else {
+        closeList();
+      }
+    } else if (e.key === 'Escape'){
+      e.preventDefault();
+      closeList();
+    }
+  });
+
+  // --- синхронизация при blur: точное имя или единственный кандидат ---
+  input.addEventListener('blur', ()=>{
+    const v = input.value.trim();
+    if (!v){ hiddenSel.value=''; return; }
+    if (setHiddenByName(v)) return;
+    const cands = findCandidates(v);
+    if (cands.length === 1){
+      setHiddenByName(cands[0].name);
+    } else {
+      hiddenSel.value = '';
+    }
+  });
+
+  // --- закрытие по клику вне ---
+  document.addEventListener('click', (e)=>{
+    if (e.target === input || box.contains(e.target)) return;
+    closeList();
+  }, true);
+
+  // --- перехват нажатия "Добавить слой ППУ": автоподстановка либо мягкая остановка ---
+  document.addEventListener('click', function addGuard(e){
+    const btn = e.target.closest('#add-pu-layer');
+    if (!btn) return;
+
+    // если уже выбран — пускаем дальше
+    if (hiddenSel.value) return;
+
+    const typed = input.value.trim();
+    if (!typed) return; // штатная проверка с вашим alert
+
+    // пробуем подобрать
+    if (setHiddenByName(typed)) return;
+    const cands = findCandidates(typed);
+    if (cands.length === 1){
+      setHiddenByName(cands[0].name);
+      return;
+    }
+
+    // иначе просим уточнить
+    try { box.classList.add('active'); input.focus(); } catch(_) {}
+    e.stopImmediatePropagation();
+    e.stopPropagation();
+    e.preventDefault();
+    setTimeout(()=>alert('Уточните марку ППУ: выберите из списка или введите точное имя (например, "ST 3038")'), 0);
+  }, true);
+
+  // --- сброс (если у вас есть кнопка #reset-all) ---
+  const resetBtn = document.getElementById('reset-all');
+  if (resetBtn){
+    resetBtn.addEventListener('click', ()=>{
+      input.value = '';
+      hiddenSel.value = '';
+      closeList();
+    });
+  }
+
+  // --- стартовые предложения (без открытия списка) ---
+  state.items = CONFIG.PU_BRANDS.slice(0, 12);
+})();
+</script>
+
+
+
+
+
+
+
+
+<script>
+(function () {
+  // ---------- утилиты ----------
+  const get = (sel, root = document) => root.querySelector(sel);
+  const getAll = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const numRU = (v) => Number(v).toLocaleString('ru-RU');
+  const parseMoney = (txt) => {
+    if (!txt) return 0;
+    const s = String(txt).replace(/\u00A0/g, ' ').replace(/[^\d,.,, -]/g,'').replace(/\s+/g,'');
+    // формат "12 345,67"
+    if (/,/.test(s) && !/\.\d{3}$/.test(s)) return Number(s.replace(/\./g,'').replace(',','.')) || 0;
+    return Number(s.replace(/,/g,'')) || 0;
+  };
+
+  // безопасно достаём CONFIG с дефолтами
+  const CFG = (window.CONFIG || {});
+  const DEC = (CFG.DECORATION || {});
+  const FAB = (CFG.FABRIC_CONSUMPTION || {});
+  const PRICE_BUTTONS = DEC.BUTTONS ?? 2000;
+  const PRICE_NAILS   = DEC.NAILS   ?? 1500;
+  const PRICE_STITCH  = DEC.STITCHING ?? 1500;
+
+  // исключения: эти плитки считаются в "материалы", а не в "доп. опции"
+  const EXCLUDE_FROM_OPTIONS = new Set(['linen-box','lift-mechanism','carriage']);
+
+ // ==================== КАРЕТНАЯ СТЯЖКА => включает Пуговицы ====================
+function wireCarriageAutoButtons() {
+  const carriage = document.getElementById('carriage-option');
+  const buttons  = document.getElementById('buttons-option');
+  if (!carriage || !buttons) return;
+
+  carriage.addEventListener('click', () => {
+    // ждём, пока базовый обработчик переключит класс
+    setTimeout(() => {
+      if (carriage.classList.contains('selected')) {
+        buttons.classList.add('selected');
+      } else {
+        buttons.classList.remove('selected');
+      }
+      if (typeof window.calculatePrice === 'function') {
+        window.calculatePrice();
+      }
+    }, 0);
+  });
+}
+wireCarriageAutoButtons();
+
+  // пересчитать корректную сумму "Доп. опции" (без каретной и без материалов)
+  function calcOptionsCorrect() {
+    const detailsTab = document.getElementById('details-tab') || document;
+    const selected = getAll('.multi-select-item.selected', detailsTab);
+    let sum = 0;
+
+    for (const item of selected) {
+      const type = item.dataset.type || '';
+      const val  = parseFloat(item.dataset.value || '0') || 0;
+
+      if (EXCLUDE_FROM_OPTIONS.has(type)) {
+        // каретная — множитель, не "рубли"
+        // бельевой ящик и подъёмный механизм — идут в материалы
+        continue;
+      }
+
+      if (type === 'buttons') sum += PRICE_BUTTONS;
+      else if (type === 'nails') sum += PRICE_NAILS;
+      else if (type === 'stitching' || type === 'tufting' || type === 'piping') sum += PRICE_STITCH;
+      else sum += val; // «Доп. опции» без data-type: берём число из data-value
+    }
+
+    return sum;
+  }
+
+  // синхронизация нижнего бара с тем, что на дашборде (после наших правок)
+function syncMobileBar() {
+    // Копируем текст напрямую из элементов дашборда
+    const costEl = document.getElementById('total-cost');
+    const priceEl = document.getElementById('sale-price');
+    const profitEl = document.getElementById('profit');
+    const fabricEl = document.getElementById('fabric-usage');
+
+    if (costEl && document.getElementById('m-cost')) {
+        document.getElementById('m-cost').textContent = costEl.textContent;
+    }
+    if (priceEl && document.getElementById('m-price')) {
+        document.getElementById('m-price').textContent = priceEl.textContent;
+    }
+    if (profitEl && document.getElementById('m-profit')) {
+        document.getElementById('m-profit').textContent = profitEl.textContent;
+    }
+    if (fabricEl && document.getElementById('m-fabric')) {
+        document.getElementById('m-fabric').textContent = fabricEl.textContent;
+    }
+}
+
+  // ПАТЧ: вызываем оригинальный расчёт, затем аккуратно «доделываем» опции и суммы
+  const originalCalculatePrice = window.calculatePrice;
+  if (typeof originalCalculatePrice !== 'function') return;
+
+  window.calculatePrice = function patchedCalculatePrice() {
+    // 1) базовый расчёт
+    originalCalculatePrice.apply(this, arguments);
+
+    // 2) автологика для каретной стяжки (пуговицы подтягиваются)
+    //    (на случай, если пользователь щёлкнул до того, как навесили обработчик)
+    (function ensureButtonsForCarriage() {
+      const carriage = document.getElementById('carriage-option');
+      const buttons  = document.getElementById('buttons-option');
+      if (carriage && buttons) {
+        if (carriage.classList.contains('selected')) buttons.classList.add('selected');
+      }
+    })();
+
+    // 3) корректная сумма «Доп. опции»
+    const optCorrect = calcOptionsCorrect();
+    const elOpt = get('#cost-options');
+    if (elOpt) elOpt.textContent = `${numRU(optCorrect)} ${CFG.DISPLAY?.CURRENCY || '₽'}`;
+
+    // 4) пересобираем ИТОГО и цену/прибыль с учётом наших опций
+    const materials = parseMoney(get('#cost-materials')?.textContent);
+    const labor     = parseMoney(get('#cost-labor')?.textContent);
+    const puCost    = parseMoney(get('#cost-pu')?.textContent);
+
+    const totalCost = Math.max(0, (materials || 0) + (labor || 0) + (puCost || 0) + optCorrect);
+
+    const margin = Number(get('#margin')?.value || 50);
+    const salePrice = Math.round(totalCost * (1 + margin / 100));
+    const profit    = salePrice - totalCost;
+
+    const setTxt = (id, val, suffix = ` ${CFG.DISPLAY?.CURRENCY || '₽'}`) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = `${numRU(Math.round(val))}${suffix}`;
+    };
+
+    // обновляем и блок «Структура затрат», и верхнюю «Себестоимость»
+    setTxt('cost-total', totalCost);
+    setTxt('total-cost', totalCost);
+    setTxt('sale-price', salePrice);
+    setTxt('profit',     profit);
+
+    // 5) нижний мобильный бар
+    syncMobileBar({ totalCost, salePrice, profit });
+  };
+
+
+// Добавьте обработчики на все элементы ввода
+document.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('change', syncMobileBar);
+    el.addEventListener('input', syncMobileBar);
+});
+
+
+  // навешиваем автосвязку каретная -> пуговицы один раз
+  wireCarriageAutoButtons();
+
+  // форс-инициализация (на случай ленивой загрузки)
+  if (document.readyState === 'complete') {
+    window.calculatePrice();
+  } else {
+    window.addEventListener('DOMContentLoaded', () => window.calculatePrice(), { once: true });
+  }
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+(function(){
+  function txt(id){ const el=document.getElementById(id); return el?el.textContent.trim():''; }
+  function set(id,val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+
+  function syncBars(){
+    const costDash   = txt('cost-total') || txt('total-cost'); // что-то одно у тебя всегда есть
+    const priceDash  = txt('sale-price');
+    const profitDash = txt('profit');
+    const fabricDash = txt('fabric-usage');
+
+    // ----- старый нижний бар (.mobile-bottom-cards) -----
+    if (costDash)   set('mobile-card-cost',   costDash);
+    if (priceDash)  set('mobile-card-price',  priceDash);
+    if (profitDash) set('mobile-card-profit', profitDash);
+    if (fabricDash) set('mobile-card-fabric', fabricDash);
+
+    // ----- новый нижний бар (.mobile-financial-summary) -----
+    // оставляем числа без валютных суффиксов, как у тебя в разметке
+    const num = s => s ? s.replace(/[^\d\u00A0\s]/g,'').trim() : '';
+    if (costDash)   set('m-cost',   num(costDash));
+    if (priceDash)  set('m-price',  num(priceDash));
+    if (profitDash) set('m-profit', num(profitDash));
+    if (fabricDash) set('m-fabric', fabricDash);
+  }
+
+  // Синк при любом пересчёте/правке DOM
+  const mo = new MutationObserver(() => requestAnimationFrame(syncBars));
+  mo.observe(document.body, {subtree:true, childList:true, characterData:true, attributes:true});
+
+  // Первичный запуск
+  window.addEventListener('DOMContentLoaded', syncBars);
+  window.addEventListener('load', syncBars);
+
+  // Если есть calculatePrice — перехватываем и синкаем после него
+  if (typeof window.calculatePrice === 'function'){
+    const orig = window.calculatePrice;
+    window.calculatePrice = function(){
+      const res = orig.apply(this, arguments);
+      syncBars();
+      return res;
+    };
+  }
+})();
+</script>
+
+<script>
+// ==================== ОТПРАВКА ЗАКАЗА В CRM ====================
+document.addEventListener('DOMContentLoaded', function() {
+  const createOrderBtn = document.getElementById('create-order-btn');
+  const statusDiv = document.getElementById('create-order-status');
+  
+  if (createOrderBtn) {
+    createOrderBtn.addEventListener('click', async function() {
+      try {
+        // Показываем загрузку
+        createOrderBtn.disabled = true;
+        createOrderBtn.textContent = 'Создаем заказ...';
+        statusDiv.textContent = '';
+        
+        // Собираем данные из формы
+        const orderData = collectOrderData();
+        
+        // Отправляем на сервер
+        const response = await fetch('http://localhost:5000/api/calculator/create-order?token=YyYujyrcfGyvit76F56f5fUurtUTDX54dyXYchcxhtXr3yH', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orderData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          statusDiv.textContent = `✅ Заказ создан! Номер: ${result.code}`;
+          statusDiv.style.color = '#10b981';
+          
+          // Очищаем форму
+          setTimeout(() => {
+            document.getElementById('reset-all').click();
+            statusDiv.textContent = '';
+          }, 3000);
+        } else {
+          throw new Error(result.message || 'Ошибка создания заказа');
+        }
+        
+      } catch (error) {
+        console.error('Ошибка:', error);
+        statusDiv.textContent = `❌ Ошибка: ${error.message}`;
+        statusDiv.style.color = '#ef4444';
+      } finally {
+        createOrderBtn.disabled = false;
+        createOrderBtn.textContent = 'Создать заказ в CRM';
+      }
+    });
+  }
+  
+  // Функция сбора данных заказа
+  function collectOrderData() {
+    const productType = document.querySelector('.option-card.selected')?.dataset.type || 'sofa';
+    const dimensions = {
+      bed: productType === 'bed',
+      width_mm: parseInt(document.getElementById('width')?.value || '2000'),
+      depth_mm: parseInt(document.getElementById('depth')?.value || '900'),
+      height_mm: parseInt(document.getElementById('height')?.value || '800'),
+      length_mm: null,
+      tsarga_mm: null,
+      headboard_mm: null
+    };
+    
+    // Собираем материалы
+    const materials = {
+      frame: document.getElementById('frame-material')?.value || 'сосна',
+      fabric: document.getElementById('fabric-material')?.value || 'велюр',
+      supports_rub: 0,
+      fabric_cost_rub: 0,
+      bed_base_mul: null
+    };
+    
+    // Собираем подушки
+    const pillows = {
+      back: parseInt(document.getElementById('back-pillows')?.value || '3'),
+      seat: parseInt(document.getElementById('seat-pillows')?.value || '2'),
+      decor: parseInt(document.getElementById('decor-pillows')?.value || '1')
+    };
+    
+    // Собираем механизм
+    const mechanism = {
+      code: document.getElementById('mechanism-type')?.value || 'еврокнижка',
+      cost_rub: 0
+    };
+    
+    // Собираем сиденье
+    const seating = {
+      firmness: 1,
+      armrests: 0
+    };
+    
+    // Собираем PU слои
+    const puLayers = Array.from(document.querySelectorAll('.pu-layer')).map(layer => {
+      const brand = layer.querySelector('.pu-brand')?.value || '';
+      const thickness = parseFloat(layer.querySelector('.pu-thickness')?.value || '25');
+      const weight = parseFloat(layer.querySelector('.pu-weight')?.value || '25');
+      const cost = parseFloat(layer.querySelector('.pu-cost')?.value || '0');
+      
+      return { brand, thickness_mm: thickness, weight_kg: weight, cost_rub: cost };
+    });
+    
+    // Собираем дополнительные опции
+    const extras = Array.from(document.querySelectorAll('.multi-select-item.selected')).map(item => {
+      const type = item.dataset.type || item.textContent.trim();
+      const value = parseFloat(item.dataset.value || '0');
+      return { type, value };
+    });
+    
+    // Собираем данные клиента
+    const customer = {
+      name: document.getElementById('crm_name')?.value || 'Тестовый клиент',
+      phone: document.getElementById('crm_phone')?.value || '+7 999 123-45-67',
+      email: document.getElementById('crm_email')?.value || 'test@example.com',
+      source: 'sofany.pro'
+    };
+    
+    // Получаем финансовые данные
+    const pricing = {
+      materials: parseFloat(document.getElementById('cost-materials')?.textContent?.replace(/[^\d]/g, '') || '0'),
+      labor: parseFloat(document.getElementById('cost-labor')?.textContent?.replace(/[^\d]/g, '') || '0'),
+      pu: parseFloat(document.getElementById('cost-pu')?.textContent?.replace(/[^\d]/g, '') || '0'),
+      options: parseFloat(document.getElementById('cost-options')?.textContent?.replace(/[^\d]/g, '') || '0'),
+      total_cost: parseFloat(document.getElementById('cost-total')?.textContent?.replace(/[^\d]/g, '') || '0'),
+      price: parseFloat(document.getElementById('sale-price')?.textContent?.replace(/[^\d]/g, '') || '0'),
+      margin: 0,
+      markup_pct: parseFloat(document.getElementById('margin')?.value || '50')
+    };
+    
+    // Собираем BOM данные
+    const bom = {
+      fabric_m: 15,
+      pu: {
+        layers_count: puLayers.length,
+        total_thickness_mm: puLayers.reduce((sum, layer) => sum + layer.thickness_mm, 0),
+        total_weight_kg: puLayers.reduce((sum, layer) => sum + layer.weight_kg, 0),
+        total_cost_rub: puLayers.reduce((sum, layer) => sum + layer.cost_rub, 0),
+        layers: puLayers
+      },
+      materials_list_text: generateMaterialsList(materials, puLayers)
+    };
+    
+    // Собираем заказ
+    const order = {
+      notes: `Заказ создан через калькулятор. Тип: ${productType}`,
+      external_ref: null
+    };
+    
+    return {
+      customer,
+      order,
+      config: {
+        product: { 
+          type: productType,
+          complexity_factor: 1
+        },
+        dimensions,
+        seating,
+        mechanism,
+        materials,
+        pillows,
+        extras
+      },
+      bom,
+      pricing
+    };
+  }
+  
+  // Генерация списка материалов
+  function generateMaterialsList(materials, puLayers) {
+    let list = [];
+    list.push(`Ткань ${materials.fabric} 15м`);
+    list.push(`ППУ 25кг`);
+    list.push(`Каркас ${materials.frame}`);
+    list.push(`Механизм ${materials.mechanism}`);
+    
+    puLayers.forEach(layer => {
+      if (layer.brand) {
+        list.push(`PU слой: ${layer.brand} (${layer.thickness_mm}мм, ${layer.weight_kg}кг)`);
+      }
+    });
+    
+    return list.join('\n');
+  }
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

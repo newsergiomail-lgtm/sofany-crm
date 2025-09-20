@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Быстрый вход - SofanyCRM</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        .status {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        .status.warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        .btn-large {
+            padding: 20px 40px;
+            font-size: 1.3em;
+            margin: 20px 10px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online {
+            background: #28a745;
+        }
+        .status-offline {
+            background: #dc3545;
+        }
+        .instructions {
+            text-align: left;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SofanyCRM</h1>
+        <p class="subtitle">Быстрый вход в систему</p>
+        
+        <div class="status warning">
+            <h3>⚠️ Режим без сервера</h3>
+            <p>Сервер API не запущен. Используется демо-режим с предустановленными данными.</p>
+        </div>
+
+        <div class="instructions">
+            <h3>🔑 Данные для входа</h3>
+            <ul>
+                <li><strong>Email:</strong> admin@sofany.com</li>
+                <li><strong>Пароль:</strong> admin123</li>
+                <li><strong>Режим:</strong> Демо (без сервера)</li>
+            </ul>
+        </div>
+
+        <div>
+            <button class="btn btn-success btn-large" onclick="quickLogin()">
+                🔑 Войти в систему
+            </button>
+        </div>
+
+        <div class="status" id="status" style="display: none;">
+            <h3>✅ Вход выполнен!</h3>
+            <p>Перенаправление в CRM...</p>
+        </div>
+
+        <div class="instructions">
+            <h3>📋 Инструкция</h3>
+            <ol>
+                <li>Нажмите кнопку "Войти в систему"</li>
+                <li>Система автоматически войдет с демо-данными</li>
+                <li>Вы попадете в CRM с полным функционалом</li>
+                <li>Все данные будут работать в демо-режиме</li>
+            </ol>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <a href="http://localhost:3000" class="btn" target="_blank">
+                🌐 Открыть CRM напрямую
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function quickLogin() {
+            // Сохраняем токен для демо-режима
+            localStorage.setItem('token', 'demo-token-' + Date.now());
+            localStorage.setItem('demo-mode', 'true');
+            localStorage.setItem('user', JSON.stringify({
+                id: 1,
+                email: 'admin@sofany.com',
+                name: 'Администратор',
+                role: 'admin'
+            }));
+            
+            // Показываем статус
+            document.getElementById('status').style.display = 'block';
+            
+            // Открываем CRM
+            setTimeout(() => {
+                window.location.href = 'http://localhost:3000';
+            }, 1500);
+        }
+
+        // Проверяем, есть ли уже токен
+        window.addEventListener('load', function() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                document.getElementById('status').style.display = 'block';
+                document.getElementById('status').innerHTML = '<h3>✅ Уже авторизованы!</h3><p>Открываем CRM...</p>';
+                
+                setTimeout(() => {
+                    window.location.href = 'http://localhost:3000';
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>

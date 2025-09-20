@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban - Sofany CRM</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .btn-secondary {
+            background: #95a5a6;
+        }
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        iframe {
+            width: 100%;
+            height: calc(100vh - 70px);
+            border: none;
+            display: block;
+        }
+        .status {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            text-align: center;
+            z-index: 1000;
+        }
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏠 Kanban - Sofany CRM</h1>
+        <div class="nav-buttons">
+            <a href="/" class="btn btn-secondary">← Назад в CRM</a>
+            <a href="/kanban" class="btn">🔄 Обновить</a>
+        </div>
+    </div>
+    
+    <div id="loadingStatus" class="status">
+        <div class="loading">
+            <div class="spinner"></div>
+            <span>Загружаем Kanban доску...</span>
+        </div>
+    </div>
+
+    <iframe 
+        id="kanbanFrame"
+        src="/Kanban.html"
+        onload="onKanbanLoad()"
+        onerror="onKanbanError()"
+    ></iframe>
+
+    <script>
+        function onKanbanLoad() {
+            console.log('Kanban загружен успешно');
+            document.getElementById('loadingStatus').style.display = 'none';
+        }
+
+        function onKanbanError() {
+            console.error('Ошибка загрузки Kanban');
+            document.getElementById('loadingStatus').innerHTML = `
+                <div style="color: #e74c3c;">
+                    <h3>❌ Ошибка загрузки Kanban</h3>
+                    <p>Не удалось загрузить Kanban доску</p>
+                    <button onclick="window.location.reload()" class="btn">🔄 Попробовать снова</button>
+                </div>
+            `;
+        }
+
+        // Проверяем доступность Kanban.html
+        fetch('/Kanban.html')
+            .then(response => {
+                if (response.ok) {
+                    console.log('✅ Kanban.html доступен');
+                } else {
+                    console.error('❌ Kanban.html недоступен:', response.status);
+                    onKanbanError();
+                }
+            })
+            .catch(error => {
+                console.error('❌ Ошибка проверки Kanban.html:', error);
+                onKanbanError();
+            });
+
+        // Автоматически скрываем загрузку через 5 секунд
+        setTimeout(() => {
+            const loading = document.getElementById('loadingStatus');
+            if (loading.style.display !== 'none') {
+                loading.style.display = 'none';
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
+
+

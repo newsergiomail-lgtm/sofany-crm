@@ -1,0 +1,986 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { 
+  ArrowLeft, 
+  Edit3, 
+  X, 
+  Plus, 
+  Check, 
+  Download, 
+  Eye, 
+  Trash2,
+  Upload
+} from 'lucide-react';
+import { ordersAPI } from '../../services/api';
+import LoadingSpinner from '../../components/UI/LoadingSpinner';
+
+const OrderDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Состояния для редактирования
+  const [editingItems, setEditingItems] = useState(false);
+  const [editingProject, setEditingProject] = useState(false);
+  const [editingClient, setEditingClient] = useState(false);
+  const [editingDelivery, setEditingDelivery] = useState(false);
+
+  // Состояния для новых позиций
+  const [showNewItemForm, setShowNewItemForm] = useState(false);
+  const [newItem, setNewItem] = useState({
+    name: '',
+    quantity: 1,
+    price: 0,
+    total: 0
+  });
+
+  // Состояния для финансовой аналитики
+  const [costValue, setCostValue] = useState(7200);
+  const [markupPercentage, setMarkupPercentage] = useState(37.5);
+
+  // Состояния для форм
+  const [clientForm, setClientForm] = useState({
+    name: 'Иван Петров',
+    phone: '+7 (912) 345-67-89',
+    email: 'ivan.petrov@example.com',
+    company: 'ООО "СтройИнвест"'
+  });
+
+  const [deliveryForm, setDeliveryForm] = useState({
+    address: 'г. Москва, ул. Ленина, д. 42, кв. 15',
+    floor: '5',
+    hasLift: false,
+    notes: 'Просьба позвонить за 30 минут до доставки...'
+  });
+
+  const [projectDescription, setProjectDescription] = useState(
+    'Особый проект с индивидуальными требованиями и срочными сроками выполнения. Необходимо учесть все пожелания клиента.'
+  );
+
+  // Позиции заказа
+  const [orderItems, setOrderItems] = useState([
+    { id: 1, name: 'Товар 1', quantity: 2, price: 1500, total: 3000 },
+    { id: 2, name: 'Товар 2', quantity: 1, price: 4500, total: 4500 }
+  ]);
+
+  // Загруженные файлы
+  const [uploadedFiles, setUploadedFiles] = useState([
+    { id: 1, name: 'Чертеж_1.pdf', size: '2.4 МБ' },
+    { id: 2, name: 'План_размещения.dwg', size: '3.7 МБ' }
+  ]);
+
+  // Состояния для drag & drop
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState({});
+
+  // Загрузка данных заказа
+  const { isLoading, error } = useQuery(
+    ['order', id],
+    () => ordersAPI.getById(id),
+    {
+      enabled: !!id,
+      onSuccess: (data) => {
+        if (data) {
+          // Инициализация данных из API
+          if (data.customer) {
+            setClientForm({
+              name: data.customer.name || '',
+              phone: data.customer.phone || '',
+              email: data.customer.email || '',
+              company: data.customer.company || ''
+            });
+          }
+          if (data.delivery) {
+            setDeliveryForm({
+              address: data.delivery.address || '',
+              floor: data.delivery.floor || '',
+              hasLift: data.delivery.has_lift || false,
+              notes: data.delivery.notes || ''
+            });
+          }
+          if (data.description) {
+            setProjectDescription(data.description);
+          }
+          if (data.items && data.items.length > 0) {
+            setOrderItems(data.items);
+            // Пересчет стоимости
+            const totalCost = data.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            setCostValue(totalCost);
+          }
+        }
+      }
+    }
+  );
+
+  // Мутации для сохранения
+  const updateOrderMutation = useMutation(
+    ({ id, ...data }) => ordersAPI.update(id, data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['order', id]);
+      }
+    }
+  );
+
+  // Загрузка чертежей при инициализации
+  useEffect(() => {
+    const loadDrawings = async () => {
+      if (id) {
+        try {
+          const drawings = await ordersAPI.getDrawings(id);
+          setUploadedFiles(drawings.map(drawing => ({
+            id: drawing.id,
+            name: drawing.file_name,
+            size: formatFileSize(drawing.file_size)
+          })));
+        } catch (error) {
+          console.error('Ошибка загрузки чертежей:', error);
+        }
+      }
+    };
+
+    loadDrawings();
+  }, [id]);
+
+  // Функции для работы с позициями
+  const handleAddItem = () => {
+    if (!newItem.name || !newItem.quantity || !newItem.price) {
+      alert('Заполните все поля');
+      return;
+    }
+
+    const newItemData = {
+      id: Date.now(),
+      name: newItem.name,
+      quantity: newItem.quantity,
+      price: newItem.price,
+      total: newItem.quantity * newItem.price
+    };
+
+    setOrderItems([...orderItems, newItemData]);
+    setCostValue(costValue + newItemData.total);
+    
+    // Сброс формы
+    setNewItem({ name: '', quantity: 1, price: 0, total: 0 });
+    setShowNewItemForm(false);
+  };
+
+  const handleDeleteItem = (itemId) => {
+    const item = orderItems.find(item => item.id === itemId);
+    if (item) {
+      setCostValue(costValue - item.total);
+      setOrderItems(orderItems.filter(item => item.id !== itemId));
+    }
+  };
+
+  // Функции для работы с файлами
+  const handleFileAction = async (action, fileId) => {
+    const file = uploadedFiles.find(f => f.id === fileId);
+    
+    if (action === 'delete') {
+      if (window.confirm(`Удалить файл ${file.name}?`)) {
+        try {
+          await ordersAPI.deleteDrawing(id, fileId);
+          setUploadedFiles(uploadedFiles.filter(f => f.id !== fileId));
+        } catch (error) {
+          console.error('Ошибка удаления файла:', error);
+          alert('Ошибка при удалении файла');
+        }
+      }
+    } else if (action === 'download') {
+      try {
+        const response = await ordersAPI.downloadDrawing(id, fileId);
+        const blob = new Blob([response.data]);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } catch (error) {
+        console.error('Ошибка скачивания файла:', error);
+        alert('Ошибка при скачивании файла');
+      }
+    } else if (action === 'view') {
+      try {
+        const response = await ordersAPI.getDrawing(id, fileId);
+        const blob = new Blob([response.data]);
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      } catch (error) {
+        console.error('Ошибка просмотра файла:', error);
+        alert('Ошибка при открытии файла');
+      }
+    }
+  };
+
+  // Функции для drag & drop
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    handleFileUpload(files);
+  };
+
+  const handleFileInput = (e) => {
+    const files = Array.from(e.target.files);
+    handleFileUpload(files);
+  };
+
+  const handleFileUpload = async (files) => {
+    if (!files || files.length === 0) return;
+
+    // Фильтруем только разрешенные типы файлов
+    const allowedTypes = ['.pdf', '.dwg', '.dxf', '.skp', '.jpg', '.jpeg', '.png'];
+    const validFiles = files.filter(file => {
+      const extension = '.' + file.name.split('.').pop().toLowerCase();
+      return allowedTypes.includes(extension);
+    });
+
+    if (validFiles.length !== files.length) {
+      alert('Некоторые файлы имеют неподдерживаемый формат. Разрешены: PDF, DWG, DXF, SKP, JPG, PNG');
+    }
+
+    if (validFiles.length === 0) return;
+
+    // Добавляем файлы в состояние загрузки
+    const timestamp = Date.now();
+    const newUploadingFiles = validFiles.map((file, index) => ({
+      id: `temp-${timestamp}-${index}`,
+      name: file.name,
+      size: formatFileSize(file.size),
+      isUploading: true,
+      progress: 0
+    }));
+
+    setUploadingFiles(prev => [...prev, ...newUploadingFiles]);
+
+    // Загружаем каждый файл
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i];
+      const tempId = `temp-${timestamp}-${i}`;
+      
+      try {
+        await uploadFile(file, tempId);
+      } catch (error) {
+        console.error('Ошибка загрузки файла:', error);
+        // Удаляем файл из состояния загрузки при ошибке
+        setUploadingFiles(prev => prev.filter(f => f.id !== tempId));
+      }
+    }
+  };
+
+  const uploadFile = async (file, tempId) => {
+    try {
+      const formData = new FormData();
+      formData.append('drawing', file);
+
+      // Симуляция прогресса загрузки
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          const currentProgress = prev[tempId] || 0;
+          if (currentProgress < 90) {
+            return { ...prev, [tempId]: currentProgress + Math.random() * 20 };
+          }
+          return prev;
+        });
+      }, 200);
+
+      // Используем API метод
+      const response = await ordersAPI.uploadDrawing(id, formData);
+      
+      clearInterval(progressInterval);
+      
+      // Завершаем прогресс
+      setUploadProgress(prev => ({ ...prev, [tempId]: 100 }));
+      
+      // Обновляем статус файла
+      setUploadingFiles(prev => 
+        prev.map(f => 
+          f.id === tempId 
+            ? { ...f, isUploading: false, isUploaded: true }
+            : f
+        )
+      );
+
+      // Через секунду удаляем из состояния загрузки и добавляем в загруженные
+      setTimeout(() => {
+        setUploadingFiles(prev => prev.filter(f => f.id !== tempId));
+        setUploadedFiles(prev => [...prev, {
+          id: response.drawing.id,
+          name: response.drawing.file_name,
+          size: formatFileSize(response.drawing.file_size)
+        }]);
+        setUploadProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[tempId];
+          return newProgress;
+        });
+      }, 1000);
+
+      return response;
+    } catch (error) {
+      console.error('Ошибка загрузки файла:', error);
+      throw error;
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Функции сохранения
+  const handleSaveItems = () => {
+    updateOrderMutation.mutate({
+      id,
+      items: orderItems
+    });
+    setEditingItems(false);
+  };
+
+  const handleSaveProject = () => {
+    updateOrderMutation.mutate({
+      id,
+      description: projectDescription
+    });
+    setEditingProject(false);
+  };
+
+  const handleSaveClient = () => {
+    updateOrderMutation.mutate({
+      id,
+      customer: clientForm
+    });
+    setEditingClient(false);
+  };
+
+  const handleSaveDelivery = () => {
+    updateOrderMutation.mutate({
+      id,
+      delivery: deliveryForm
+    });
+    setEditingDelivery(false);
+  };
+
+  // Расчет финансовой аналитики
+  const calculateFinance = () => {
+    const price = costValue * (1 + markupPercentage / 100);
+    const profit = price - costValue;
+    const margin = (profit / price) * 100;
+    
+    return { price, profit, margin };
+  };
+
+  const { price, profit, margin } = calculateFinance();
+
+  // Форматирование валюты
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(value) + ' ₽';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Ошибка загрузки заказа</p>
+          <button 
+            onClick={() => navigate('/orders')}
+            className="btn-primary btn-md"
+          >
+            Вернуться к списку
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Заголовок страницы */}
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/orders')}
+            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Назад к заказам
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">Заказ #{id}</h1>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1.618fr_1fr] gap-7">
+          {/* Левая колонка */}
+          <div className="space-y-6">
+            {/* Позиции заказа */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex justify-between items-center mb-5 pb-3 border-b border-gray-100">
+                <h2 className="text-xl font-semibold text-gray-900">Позиции заказа</h2>
+                <button
+                  onClick={() => setEditingItems(!editingItems)}
+                  className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-all duration-200 hover:scale-105"
+                >
+                  {editingItems ? <X className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="text-left py-3 px-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Наименование</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Кол-во</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Цена</th>
+                      <th className="text-left py-3 px-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Сумма</th>
+                      <th className="w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orderItems.map((item) => (
+                      <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                        <td className="py-3 px-2">
+                          <input
+                            type="text"
+                            value={item.name}
+                            readOnly={!editingItems}
+                            className={`w-full px-3 py-2 text-sm border rounded-lg transition-all ${
+                              editingItems 
+                                ? 'border-gray-300 bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-200' 
+                                : 'border-transparent bg-gray-50'
+                            }`}
+                          />
+                        </td>
+                        <td className="py-3 px-2">
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            readOnly={!editingItems}
+                            className={`w-full px-3 py-2 text-sm border rounded-lg transition-all ${
+                              editingItems 
+                                ? 'border-gray-300 bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-200' 
+                                : 'border-transparent bg-gray-50'
+                            }`}
+                          />
+                        </td>
+                        <td className="py-3 px-2">
+                          <input
+                            type="number"
+                            value={item.price}
+                            readOnly={!editingItems}
+                            className={`w-full px-3 py-2 text-sm border rounded-lg transition-all ${
+                              editingItems 
+                                ? 'border-gray-300 bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-200' 
+                                : 'border-transparent bg-gray-50'
+                            }`}
+                          />
+                        </td>
+                        <td className="py-3 px-2">
+                          <input
+                            type="text"
+                            value={item.total}
+                            readOnly
+                            className="w-full px-3 py-2 text-sm border border-transparent bg-gray-50 rounded-lg"
+                          />
+                        </td>
+                        <td className="py-3 px-2">
+                          {editingItems && (
+                            <button
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="p-1 text-red-500 hover:bg-red-50 rounded transition-all duration-200 hover:scale-110"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Форма добавления новой позиции */}
+              {editingItems && (
+                <>
+                  {showNewItemForm ? (
+                    <div className="grid grid-cols-5 gap-3 mt-4 p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Название товара"
+                          value={newItem.name}
+                          onChange={(e) => setNewItem({...newItem, name: e.target.value})}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          placeholder="Кол-во"
+                          min="1"
+                          value={newItem.quantity}
+                          onChange={(e) => {
+                            const quantity = parseFloat(e.target.value) || 0;
+                            const total = quantity * newItem.price;
+                            setNewItem({...newItem, quantity, total});
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          placeholder="Цена"
+                          min="0"
+                          step="0.01"
+                          value={newItem.price}
+                          onChange={(e) => {
+                            const price = parseFloat(e.target.value) || 0;
+                            const total = newItem.quantity * price;
+                            setNewItem({...newItem, price, total});
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Сумма"
+                          value={newItem.total}
+                          readOnly
+                          className="w-full px-3 py-2 text-sm border border-gray-300 bg-gray-100 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <button
+                          onClick={handleAddItem}
+                          className="w-full bg-teal-600 text-white px-3 py-2 rounded-lg hover:bg-teal-700 transition-colors flex items-center justify-center"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowNewItemForm(true)}
+                      className="mt-4 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Добавить позицию
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleSaveItems}
+                    className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                  >
+                    <Check className="h-4 w-4" />
+                    Сохранить
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Описание проекта */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex justify-between items-center mb-5 pb-3 border-b border-gray-100">
+                <h2 className="text-xl font-semibold text-gray-900">Описание проекта</h2>
+                <button
+                  onClick={() => setEditingProject(!editingProject)}
+                  className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-all duration-200 hover:scale-105"
+                >
+                  {editingProject ? <X className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+                </button>
+              </div>
+
+              <textarea
+                value={projectDescription}
+                onChange={(e) => setProjectDescription(e.target.value)}
+                readOnly={!editingProject}
+                className={`w-full px-4 py-3 text-sm border rounded-lg resize-y min-h-[120px] transition-all ${
+                  editingProject 
+                    ? 'border-gray-300 bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-200' 
+                    : 'border-transparent bg-gray-50'
+                }`}
+              />
+
+              {editingProject && (
+                <button
+                  onClick={handleSaveProject}
+                  className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                >
+                  <Check className="h-4 w-4" />
+                  Сохранить описание
+                </button>
+              )}
+
+              {/* Область загрузки файлов */}
+              {editingProject && (
+                <div 
+                  className={`mt-6 border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer ${
+                    isDragOver 
+                      ? 'border-teal-500 bg-teal-50' 
+                      : 'border-gray-300 hover:border-teal-500 hover:bg-teal-50'
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => document.getElementById('fileInput').click()}
+                >
+                  <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 mb-2">
+                    {isDragOver ? 'Отпустите файлы для загрузки' : 'Перетащите чертежи сюда или нажмите для загрузки'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Поддерживаемые форматы: PDF, DWG, DXF, SKP, JPG, PNG
+                  </p>
+                  <input 
+                    id="fileInput"
+                    type="file" 
+                    multiple 
+                    accept=".pdf,.dwg,.dxf,.skp,.jpg,.jpeg,.png"
+                    onChange={handleFileInput}
+                    className="hidden" 
+                  />
+                </div>
+              )}
+
+              {/* Загруженные чертежи */}
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Загруженные чертежи</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="text-left py-3 px-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Имя файла</th>
+                        <th className="text-left py-3 px-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Размер</th>
+                        <th className="text-left py-3 px-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Загружающиеся файлы */}
+                      {uploadingFiles.map((file) => (
+                        <tr key={file.id} className="border-b border-gray-50 bg-blue-50">
+                          <td className="py-3 px-2 text-sm text-gray-900 flex items-center gap-2">
+                            <div className="animate-spin h-4 w-4 border-2 border-teal-600 border-t-transparent rounded-full"></div>
+                            {file.name}
+                          </td>
+                          <td className="py-3 px-2 text-sm text-gray-500">{file.size}</td>
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-teal-600 h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${uploadProgress[file.id] || 0}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-xs text-gray-500 min-w-[35px]">
+                                {uploadProgress[file.id] || 0}%
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      
+                      {/* Загруженные файлы */}
+                      {uploadedFiles.map((file) => (
+                        <tr key={file.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                          <td className="py-3 px-2 text-sm text-gray-900">{file.name}</td>
+                          <td className="py-3 px-2 text-sm text-gray-500">{file.size}</td>
+                          <td className="py-3 px-2">
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => handleFileAction('download', file.id)}
+                                className="p-1 text-teal-600 hover:bg-teal-50 rounded transition-all duration-200 hover:scale-110"
+                                title="Скачать"
+                              >
+                                <Download className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleFileAction('view', file.id)}
+                                className="p-1 text-green-600 hover:bg-green-50 rounded transition-all duration-200 hover:scale-110"
+                                title="Посмотреть"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleFileAction('delete', file.id)}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-all duration-200 hover:scale-110"
+                                title="Удалить"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Правая колонка */}
+          <div className="space-y-6">
+            {/* Финансовая аналитика */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex justify-between items-center mb-5 pb-3 border-b border-gray-100">
+                <h2 className="text-xl font-semibold text-gray-900">Финансовая аналитика</h2>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 text-center border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">Себестоимость</h3>
+                  <div className="text-2xl font-bold text-teal-700">{formatCurrency(costValue)}</div>
+                </div>
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 text-center border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">Цена продажи</h3>
+                  <div className="text-2xl font-bold text-teal-700">{formatCurrency(price)}</div>
+                </div>
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 text-center border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">Прибыль</h3>
+                  <div className="text-2xl font-bold text-teal-700">{formatCurrency(profit)}</div>
+                </div>
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 text-center border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1">
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">Маржа</h3>
+                  <div className="text-2xl font-bold text-teal-700">{margin.toFixed(1)}%</div>
+                </div>
+              </div>
+
+              {/* Ползунок наценки */}
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Уровень наценки</h3>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500">0%</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="200"
+                    value={markupPercentage}
+                    onChange={(e) => setMarkupPercentage(parseFloat(e.target.value))}
+                    className="flex-1 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                  <span className="text-xs text-gray-500">200%</span>
+                  <span className="min-w-[50px] text-center font-semibold text-teal-600 text-sm">
+                    {markupPercentage.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Информация о клиенте */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex justify-between items-center mb-5 pb-3 border-b border-gray-100">
+                <h2 className="text-xl font-semibold text-gray-900">Информация о клиенте</h2>
+                <button
+                  onClick={() => setEditingClient(!editingClient)}
+                  className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-all duration-200 hover:scale-105"
+                >
+                  {editingClient ? <X className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="py-3 border-b border-gray-100">
+                  <div className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-2">Имя</div>
+                  {editingClient ? (
+                    <input
+                      type="text"
+                      value={clientForm.name}
+                      onChange={(e) => setClientForm({...clientForm, name: e.target.value})}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                    />
+                  ) : (
+                    <div className="text-sm font-semibold text-gray-900">{clientForm.name}</div>
+                  )}
+                </div>
+
+                <div className="py-3 border-b border-gray-100">
+                  <div className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-2">Телефон</div>
+                  {editingClient ? (
+                    <input
+                      type="tel"
+                      value={clientForm.phone}
+                      onChange={(e) => setClientForm({...clientForm, phone: e.target.value})}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                    />
+                  ) : (
+                    <div className="text-sm font-semibold text-gray-900">{clientForm.phone}</div>
+                  )}
+                </div>
+
+                <div className="py-3 border-b border-gray-100">
+                  <div className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-2">Email</div>
+                  {editingClient ? (
+                    <input
+                      type="email"
+                      value={clientForm.email}
+                      onChange={(e) => setClientForm({...clientForm, email: e.target.value})}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                    />
+                  ) : (
+                    <div className="text-sm font-semibold text-gray-900">{clientForm.email}</div>
+                  )}
+                </div>
+
+                <div className="py-3">
+                  <div className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-2">Компания</div>
+                  {editingClient ? (
+                    <input
+                      type="text"
+                      value={clientForm.company}
+                      onChange={(e) => setClientForm({...clientForm, company: e.target.value})}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                    />
+                  ) : (
+                    <div className="text-sm font-semibold text-gray-900">{clientForm.company}</div>
+                  )}
+                </div>
+              </div>
+
+              {editingClient && (
+                <button
+                  onClick={handleSaveClient}
+                  className="w-full mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Check className="h-4 w-4" />
+                  Сохранить изменения
+                </button>
+              )}
+            </div>
+
+            {/* Доставка */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex justify-between items-center mb-5 pb-3 border-b border-gray-100">
+                <h2 className="text-xl font-semibold text-gray-900">Доставка</h2>
+                <button
+                  onClick={() => setEditingDelivery(!editingDelivery)}
+                  className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-all duration-200 hover:scale-105"
+                >
+                  {editingDelivery ? <X className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="py-3 border-b border-gray-100">
+                  <div className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-2">Адрес доставки</div>
+                  {editingDelivery ? (
+                    <input
+                      type="text"
+                      value={deliveryForm.address}
+                      onChange={(e) => setDeliveryForm({...deliveryForm, address: e.target.value})}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                    />
+                  ) : (
+                    <div className="text-sm font-semibold text-gray-900">{deliveryForm.address}</div>
+                  )}
+                </div>
+
+                <div className="py-3 border-b border-gray-100">
+                  <div className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-2">Этаж</div>
+                  {editingDelivery ? (
+                    <input
+                      type="text"
+                      value={deliveryForm.floor}
+                      onChange={(e) => setDeliveryForm({...deliveryForm, floor: e.target.value})}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                    />
+                  ) : (
+                    <div className="text-sm font-semibold text-gray-900">{deliveryForm.floor}</div>
+                  )}
+                </div>
+
+                <div className="py-3 border-b border-gray-100">
+                  <div className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-2">Есть лифт</div>
+                  {editingDelivery ? (
+                    <select
+                      value={deliveryForm.hasLift ? 'true' : 'false'}
+                      onChange={(e) => setDeliveryForm({...deliveryForm, hasLift: e.target.value === 'true'})}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+                    >
+                      <option value="false">Нет</option>
+                      <option value="true">Да</option>
+                    </select>
+                  ) : (
+                    <div className="text-sm font-semibold text-gray-900">{deliveryForm.hasLift ? 'Да' : 'Нет'}</div>
+                  )}
+                </div>
+
+                <div className="py-3">
+                  <div className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-2">Примечания</div>
+                  {editingDelivery ? (
+                    <textarea
+                      value={deliveryForm.notes}
+                      onChange={(e) => setDeliveryForm({...deliveryForm, notes: e.target.value})}
+                      rows={3}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200 resize-none"
+                    />
+                  ) : (
+                    <div className="text-sm font-semibold text-gray-900">{deliveryForm.notes}</div>
+                  )}
+                </div>
+              </div>
+
+              {editingDelivery && (
+                <button
+                  onClick={handleSaveDelivery}
+                  className="w-full mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Check className="h-4 w-4" />
+                  Сохранить изменения
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style jsx>{`
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: #0ea5a5;
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 0 0 1px #e2e8f0;
+          transition: all 0.2s ease;
+        }
+        
+        .slider::-webkit-slider-thumb:hover {
+          transform: scale(1.15);
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default OrderDetail;

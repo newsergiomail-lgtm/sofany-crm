@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мастер создания заказа с загрузкой чертежей</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://unpkg.com/react-hot-toast@2.4.1/dist/index.min.js"></script>
+    <script src="https://unpkg.com/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .step-completed { @apply bg-teal-600 border-teal-600 text-white; }
+        .step-current { @apply bg-teal-100 border-teal-600 text-teal-600; }
+        .step-accessible { @apply bg-white border-gray-300 text-gray-400; }
+        .step-disabled { @apply bg-gray-100 border-gray-200 text-gray-300; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+        const { ArrowLeft, ArrowRight, Check, User, Package, Truck, DollarSign, FileText, Upload, Eye, Download, Trash2 } = lucide;
+
+        // Компонент загрузки чертежей
+        const DrawingUpload = ({ drawings = [], onUpload, onDelete, onDownload, onView, maxFiles = 10, maxFileSize = 10 * 1024 * 1024, acceptedTypes = ['.pdf', '.dwg', '.dxf', '.jpg', '.jpeg', '.png', '.tiff', '.bmp'] }) => {
+            const [isDragOver, setIsDragOver] = useState(false);
+            const [uploading, setUploading] = useState(false);
+            const fileInputRef = useRef(null);
+
+            const handleDragOver = (e) => {
+                e.preventDefault();
+                setIsDragOver(true);
+            };
+
+            const handleDragLeave = (e) => {
+                e.preventDefault();
+                setIsDragOver(false);
+            };
+
+            const handleDrop = (e) => {
+                e.preventDefault();
+                setIsDragOver(false);
+                const files = Array.from(e.dataTransfer.files);
+                handleFiles(files);
+            };
+
+            const handleFileSelect = (e) => {
+                const files = Array.from(e.target.files);
+                handleFiles(files);
+            };
+
+            const handleFiles = async (files) => {
+                if (files.length === 0) return;
+
+                if (drawings.length + files.length > maxFiles) {
+                    alert(`Максимальное количество файлов: ${maxFiles}`);
+                    return;
+                }
+
+                for (const file of files) {
+                    if (file.size > maxFileSize) {
+                        alert(`Файл "${file.name}" слишком большой. Максимальный размер: ${Math.round(maxFileSize / 1024 / 1024)}MB`);
+                        continue;
+                    }
+
+                    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+                    if (!acceptedTypes.includes(fileExtension)) {
+                        alert(`Файл "${file.name}" имеет неподдерживаемый формат. Поддерживаемые форматы: ${acceptedTypes.join(', ')}`);
+                        continue;
+                    }
+
+                    try {
+                        setUploading(true);
+                        await onUpload(file);
+                        alert(`Файл "${file.name}" загружен успешно`);
+                    } catch (error) {
+                        console.error('Ошибка загрузки файла:', error);
+                        alert(`Ошибка загрузки файла "${file.name}"`);
+                    }
+                }
+
+                setUploading(false);
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+            };
+
+            const formatFileSize = (bytes) => {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            };
+
+            const getFileIcon = (fileType) => {
+                if (fileType.includes('pdf')) return '📄';
+                if (fileType.includes('dwg') || fileType.includes('dxf')) return '📐';
+                if (fileType.includes('image')) return '🖼️';
+                return '📁';
+            };
+
+            return React.createElement('div', { className: 'space-y-4' },
+                React.createElement('div', {
+                    className: `border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragOver ? 'border-teal-500 bg-teal-50' : 'border-gray-300 hover:border-gray-400'} ${uploading ? 'opacity-50 pointer-events-none' : ''}`,
+                    onDragOver: handleDragOver,
+                    onDragLeave: handleDragLeave,
+                    onDrop: handleDrop
+                },
+                    React.createElement(Upload, { className: 'h-12 w-12 text-gray-400 mx-auto mb-4' }),
+                    React.createElement('div', { className: 'space-y-2' },
+                        React.createElement('p', { className: 'text-lg font-medium text-gray-900' },
+                            uploading ? 'Загрузка файлов...' : 'Перетащите чертежи сюда'
+                        ),
+                        React.createElement('p', { className: 'text-sm text-gray-500' },
+                            'или ',
+                            React.createElement('button', {
+                                type: 'button',
+                                onClick: () => fileInputRef.current?.click(),
+                                className: 'text-teal-600 hover:text-teal-700 font-medium'
+                            }, 'выберите файлы')
+                        ),
+                        React.createElement('p', { className: 'text-xs text-gray-400' },
+                            `Поддерживаемые форматы: ${acceptedTypes.join(', ')} • Максимум ${maxFiles} файлов • До ${Math.round(maxFileSize / 1024 / 1024)}MB каждый`
+                        )
+                    ),
+                    React.createElement('input', {
+                        ref: fileInputRef,
+                        type: 'file',
+                        multiple: true,
+                        accept: acceptedTypes.join(','),
+                        onChange: handleFileSelect,
+                        className: 'hidden'
+                    })
+                ),
+                drawings.length > 0 && React.createElement('div', { className: 'space-y-2' },
+                    React.createElement('h4', { className: 'text-sm font-medium text-gray-900' },
+                        `Загруженные чертежи (${drawings.length})`
+                    ),
+                    React.createElement('div', { className: 'space-y-2' },
+                        drawings.map((drawing, index) => React.createElement('div', {
+                            key: drawing.id || index,
+                            className: 'flex items-center justify-between p-3 bg-gray-50 rounded-lg border'
+                        },
+                            React.createElement('div', { className: 'flex items-center space-x-3' },
+                                React.createElement('span', { className: 'text-2xl' },
+                                    getFileIcon(drawing.file_type || drawing.type)
+                                ),
+                                React.createElement('div', { className: 'flex-1 min-w-0' },
+                                    React.createElement('p', { className: 'text-sm font-medium text-gray-900 truncate' },
+                                        drawing.file_name || drawing.name
+                                    ),
+                                    React.createElement('p', { className: 'text-xs text-gray-500' },
+                                        formatFileSize(drawing.file_size || drawing.size)
+                                    )
+                                )
+                            ),
+                            React.createElement('div', { className: 'flex items-center space-x-2' },
+                                onView && React.createElement('button', {
+                                    type: 'button',
+                                    onClick: () => onView(drawing),
+                                    className: 'p-1 text-gray-400 hover:text-gray-600 transition-colors',
+                                    title: 'Просмотр'
+                                }, React.createElement(Eye, { className: 'h-4 w-4' })),
+                                onDownload && React.createElement('button', {
+                                    type: 'button',
+                                    onClick: () => onDownload(drawing),
+                                    className: 'p-1 text-gray-400 hover:text-gray-600 transition-colors',
+                                    title: 'Скачать'
+                                }, React.createElement(Download, { className: 'h-4 w-4' })),
+                                onDelete && React.createElement('button', {
+                                    type: 'button',
+                                    onClick: () => onDelete(drawing),
+                                    className: 'p-1 text-red-400 hover:text-red-600 transition-colors',
+                                    title: 'Удалить'
+                                }, React.createElement(Trash2, { className: 'h-4 w-4' }))
+                            )
+                        ))
+                    )
+                )
+            );
+        };
+
+        // Компонент генерации QR-кода
+        const QRCodeGenerator = ({ orderId }) => {
+            const [qrCode, setQrCode] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            const generateQR = async () => {
+                setLoading(true);
+                try {
+                    const response = await fetch(`/api/production/generate-qr/${orderId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ stageId: 1 })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        setQrCode(data.qrCodeUrl);
+                        alert('QR-код сгенерирован успешно!');
+                    } else {
+                        throw new Error('Ошибка генерации QR-кода');
+                    }
+                } catch (error) {
+                    console.error('Ошибка генерации QR-кода:', error);
+                    alert('Ошибка при генерации QR-кода');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return React.createElement('div', { className: 'bg-white rounded-lg p-6 border' },
+                React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, 'QR-код для заказа'),
+                React.createElement('button', {
+                    onClick: generateQR,
+                    disabled: loading,
+                    className: 'px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50'
+                }, loading ? 'Генерация...' : 'Сгенерировать QR-код'),
+                qrCode && React.createElement('div', { className: 'mt-4' },
+                    React.createElement('img', { src: qrCode, alt: 'QR Code', className: 'mx-auto' })
+                )
+            );
+        };
+
+        // Основной компонент мастера
+        const CreateOrderWizard = () => {
+            const [currentStep, setCurrentStep] = useState(1);
+            const [completedSteps, setCompletedSteps] = useState(new Set());
+            const [createdOrderId, setCreatedOrderId] = useState(null);
+            const [errors, setErrors] = useState({});
+            const [loading, setLoading] = useState(false);
+
+            // Состояния для каждого шага
+            const [clientInfo, setClientInfo] = useState({
+                name: '', phone: '', email: '', company: ''
+            });
+
+            const [orderDetails, setOrderDetails] = useState({
+                productName: '', description: '', priority: 'normal', deadline: '',
+                items: [{ name: '', quantity: 1, price: 0 }]
+            });
+
+            const [deliveryInfo, setDeliveryInfo] = useState({
+                address: '', floor: '', hasFreightElevator: false, comment: ''
+            });
+
+            const [financialInfo, setFinancialInfo] = useState({
+                prepaymentAmount: 0, prepaymentPercent: 0, paymentMethod: 'cash', invoiceNumber: ''
+            });
+
+            // Состояние для чертежей
+            const [drawings, setDrawings] = useState([]);
+            const [uploadingDrawings, setUploadingDrawings] = useState(false);
+
+            const steps = [
+                { id: 1, title: 'Клиент', icon: User, description: 'Основная информация' },
+                { id: 2, title: 'Заказ', icon: Package, description: 'Детали заказа' },
+                { id: 3, title: 'Доставка', icon: Truck, description: 'Адрес и условия' },
+                { id: 4, title: 'Финансы', icon: DollarSign, description: 'Оплата' },
+                { id: 5, title: 'Обзор', icon: FileText, description: 'Проверка данных' },
+                { id: 6, title: 'Готово', icon: Check, description: 'Заказ создан' }
+            ];
+
+            // Обработчики для чертежей
+            const handleDrawingUpload = (file) => {
+                const newDrawing = {
+                    id: Date.now() + Math.random(),
+                    file: file, name: file.name, size: file.size, type: file.type
+                };
+                setDrawings(prev => [...prev, newDrawing]);
+            };
+
+            const handleDrawingDelete = (drawing) => {
+                setDrawings(prev => prev.filter(d => d.id !== drawing.id));
+            };
+
+            const handleDrawingDownload = (drawing) => {
+                if (drawing.file) {
+                    const url = URL.createObjectURL(drawing.file);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = drawing.name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
+            };
+
+            const handleDrawingView = (drawing) => {
+                if (drawing.file) {
+                    const url = URL.createObjectURL(drawing.file);
+                    window.open(url, '_blank');
+                }
+            };
+
+            // Валидация шагов
+            const validateStep1 = () => {
+                const newErrors = {};
+                if (!clientInfo.name.trim()) newErrors.name = 'Введите имя клиента';
+                if (!clientInfo.phone.trim()) newErrors.phone = 'Введите телефон клиента';
+                if (clientInfo.email && !/\S+@\S+\.\S+/.test(clientInfo.email)) {
+                    newErrors.email = 'Введите корректный email';
+                }
+                setErrors(newErrors);
+                return Object.keys(newErrors).length === 0;
+            };
+
+            const validateStep2 = () => {
+                const newErrors = {};
+                if (!orderDetails.productName.trim()) newErrors.productName = 'Введите название продукта';
+                const validItems = orderDetails.items.filter(item => item.name.trim());
+                if (validItems.length === 0) {
+                    newErrors.items = 'Добавьте хотя бы одну позицию';
+                }
+                setErrors(newErrors);
+                return Object.keys(newErrors).length === 0;
+            };
+
+            const validateStep3 = () => {
+                const newErrors = {};
+                if (!deliveryInfo.address.trim()) newErrors.address = 'Введите адрес доставки';
+                setErrors(newErrors);
+                return Object.keys(newErrors).length === 0;
+            };
+
+            const validateStep4 = () => {
+                const newErrors = {};
+                if (financialInfo.prepaymentAmount < 0) {
+                    newErrors.prepaymentAmount = 'Сумма предоплаты не может быть отрицательной';
+                }
+                setErrors(newErrors);
+                return Object.keys(newErrors).length === 0;
+            };
+
+            // Навигация между шагами
+            const nextStep = () => {
+                let isValid = false;
+                switch (currentStep) {
+                    case 1: isValid = validateStep1(); break;
+                    case 2: isValid = validateStep2(); break;
+                    case 3: isValid = validateStep3(); break;
+                    case 4: isValid = validateStep4(); break;
+                    default: isValid = true;
+                }
+
+                if (isValid) {
+                    setCompletedSteps(prev => new Set([...prev, currentStep]));
+                    setCurrentStep(prev => Math.min(prev + 1, 5));
+                    setErrors({});
+                }
+            };
+
+            const prevStep = () => {
+                setCurrentStep(prev => Math.max(prev - 1, 1));
+                setErrors({});
+            };
+
+            // Создание заказа
+            const createOrder = async () => {
+                setLoading(true);
+                try {
+                    // Создаем заказ
+                    const items = orderDetails.items
+                        .filter(item => item.name.trim())
+                        .map(item => ({
+                            name: item.name, description: '', quantity: Number(item.quantity) || 1,
+                            unit_price: Number(item.price) || 0,
+                        }));
+
+                    const totalAmount = items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+
+                    const orderData = {
+                        customer_id: 1, // Тестовый ID
+                        product_name: orderDetails.productName,
+                        status: 'new',
+                        priority: orderDetails.priority,
+                        delivery_date: orderDetails.deadline || null,
+                        total_amount: totalAmount,
+                        prepayment_amount: financialInfo.prepaymentAmount || 0,
+                        paid_amount: 0,
+                        notes: deliveryInfo.comment || '',
+                        short_description: orderDetails.description || '',
+                        detailed_description: orderDetails.description || '',
+                        delivery_address: deliveryInfo.address || null,
+                        has_elevator: deliveryInfo.hasFreightElevator,
+                        floor: deliveryInfo.floor || null,
+                        delivery_notes: deliveryInfo.comment || null,
+                        items,
+                    };
+
+                    const response = await fetch('/api/orders', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token') || 'test-token'}`
+                        },
+                        body: JSON.stringify(orderData)
+                    });
+
+                    if (!response.ok) throw new Error('Ошибка создания заказа');
+
+                    const result = await response.json();
+                    const orderId = result.order?.id || result.id;
+                    setCreatedOrderId(orderId);
+                    setCompletedSteps(prev => new Set([...prev, 5, 6]));
+                    setCurrentStep(6); // Переходим на финальную страницу
+
+                    // Загружаем чертежи
+                    if (drawings.length > 0 && orderId) {
+                        setUploadingDrawings(true);
+                        for (const drawing of drawings) {
+                            const formData = new FormData();
+                            formData.append('drawing', drawing.file);
+                            
+                            await fetch(`/api/orders/${orderId}/drawings`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || 'test-token'}` },
+                                body: formData
+                            });
+                        }
+                        setUploadingDrawings(false);
+                    }
+
+                    alert('Заказ успешно создан!');
+                } catch (error) {
+                    console.error('Ошибка создания заказа:', error);
+                    alert('Ошибка при создании заказа: ' + error.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            // Добавление позиции заказа
+            const addOrderItem = () => {
+                setOrderDetails(prev => ({
+                    ...prev,
+                    items: [...prev.items, { name: '', quantity: 1, price: 0 }]
+                }));
+            };
+
+            const removeOrderItem = (index) => {
+                setOrderDetails(prev => ({
+                    ...prev,
+                    items: prev.items.filter((_, i) => i !== index)
+                }));
+            };
+
+            const updateOrderItem = (index, field, value) => {
+                setOrderDetails(prev => ({
+                    ...prev,
+                    items: prev.items.map((item, i) => 
+                        i === index ? { ...item, [field]: value } : item
+                    )
+                }));
+            };
+
+            return React.createElement('div', { className: 'min-h-screen bg-gray-50' },
+                React.createElement('div', { className: 'max-w-4xl mx-auto p-4' },
+                    // Заголовок
+                    React.createElement('div', { className: 'flex items-center justify-between mb-8' },
+                        React.createElement('div', { className: 'flex items-center gap-4' },
+                            React.createElement('button', {
+                                onClick: () => window.history.back(),
+                                className: 'flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors'
+                            },
+                                React.createElement(ArrowLeft, { className: 'h-4 w-4' }),
+                                'Назад к заказам'
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('h1', { className: 'text-2xl font-bold text-gray-900' }, 'Создание заказа'),
+                                React.createElement('p', { className: 'text-gray-600' }, 'Пошаговое заполнение информации')
+                            )
+                        )
+                    ),
+
+                    // Прогресс-бар
+                    React.createElement('div', { className: 'mb-8' },
+                        React.createElement('div', { className: 'flex items-center justify-between' },
+                            steps.map((step, index) => {
+                                const Icon = step.icon;
+                                const isCompleted = completedSteps.has(step.id);
+                                const isCurrent = currentStep === step.id;
+                                const isAccessible = step.id <= currentStep || completedSteps.has(step.id);
+
+                                return React.createElement('div', { key: step.id, className: 'flex items-center' },
+                                    React.createElement('div', { className: 'flex flex-col items-center' },
+                                        React.createElement('div', {
+                                            className: `w-12 h-12 rounded-full flex items-center justify-center border-2 transition-colors ${
+                                                isCompleted ? 'step-completed' : 
+                                                isCurrent ? 'step-current' : 
+                                                isAccessible ? 'step-accessible' : 'step-disabled'
+                                            }`
+                                        },
+                                            isCompleted ? React.createElement(Check, { className: 'h-6 w-6' }) : 
+                                            React.createElement(Icon, { className: 'h-6 w-6' })
+                                        ),
+                                        React.createElement('div', { className: 'mt-2 text-center' },
+                                            React.createElement('div', {
+                                                className: `text-sm font-medium ${
+                                                    isCurrent ? 'text-teal-600' : isCompleted ? 'text-gray-900' : 'text-gray-500'
+                                                }`
+                                            }, step.title),
+                                            React.createElement('div', { className: 'text-xs text-gray-500' }, step.description)
+                                        )
+                                    ),
+                                    index < steps.length - 1 && React.createElement('div', {
+                                        className: `flex-1 h-0.5 mx-4 ${
+                                            completedSteps.has(step.id) ? 'bg-teal-600' : 'bg-gray-200'
+                                        }`
+                                    })
+                                );
+                            })
+                        )
+                    ),
+
+                    // Контент шага
+                    React.createElement('div', { className: 'bg-white rounded-xl shadow-sm border border-gray-100 p-8' },
+                        // Шаг 1 - Клиент
+                        currentStep === 1 && React.createElement('div', null,
+                            React.createElement('h2', { className: 'text-xl font-semibold text-gray-900 mb-6' }, 'Информация о клиенте'),
+                            React.createElement('div', { className: 'grid grid-cols-2 gap-6' },
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' },
+                                        'ФИО клиента ', React.createElement('span', { className: 'text-red-500' }, '*')
+                                    ),
+                                    React.createElement('input', {
+                                        type: 'text',
+                                        className: `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                                            errors.name ? 'border-red-500' : 'border-gray-300'
+                                        }`,
+                                        placeholder: 'Иванов Иван Иванович',
+                                        value: clientInfo.name,
+                                        onChange: (e) => setClientInfo(prev => ({ ...prev, name: e.target.value }))
+                                    }),
+                                    errors.name && React.createElement('p', { className: 'mt-1 text-sm text-red-600' }, errors.name)
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' },
+                                        'Телефон ', React.createElement('span', { className: 'text-red-500' }, '*')
+                                    ),
+                                    React.createElement('input', {
+                                        type: 'tel',
+                                        className: `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                                            errors.phone ? 'border-red-500' : 'border-gray-300'
+                                        }`,
+                                        placeholder: '+7 (900) 123-45-67',
+                                        value: clientInfo.phone,
+                                        onChange: (e) => setClientInfo(prev => ({ ...prev, phone: e.target.value }))
+                                    }),
+                                    errors.phone && React.createElement('p', { className: 'mt-1 text-sm text-red-600' }, errors.phone)
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Email'),
+                                    React.createElement('input', {
+                                        type: 'email',
+                                        className: `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                                            errors.email ? 'border-red-500' : 'border-gray-300'
+                                        }`,
+                                        placeholder: 'client@example.com',
+                                        value: clientInfo.email,
+                                        onChange: (e) => setClientInfo(prev => ({ ...prev, email: e.target.value }))
+                                    }),
+                                    errors.email && React.createElement('p', { className: 'mt-1 text-sm text-red-600' }, errors.email)
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Компания'),
+                                    React.createElement('input', {
+                                        type: 'text',
+                                        className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500',
+                                        placeholder: 'ООО Пример',
+                                        value: clientInfo.company,
+                                        onChange: (e) => setClientInfo(prev => ({ ...prev, company: e.target.value }))
+                                    })
+                                )
+                            )
+                        ),
+
+                        // Шаг 2 - Заказ с чертежами
+                        currentStep === 2 && React.createElement('div', null,
+                            React.createElement('h2', { className: 'text-xl font-semibold text-gray-900 mb-6' }, 'Детали заказа'),
+                            React.createElement('div', { className: 'space-y-6' },
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' },
+                                        'Название продукта ', React.createElement('span', { className: 'text-red-500' }, '*')
+                                    ),
+                                    React.createElement('input', {
+                                        type: 'text',
+                                        className: `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                                            errors.productName ? 'border-red-500' : 'border-gray-300'
+                                        }`,
+                                        placeholder: 'Диван угловой',
+                                        value: orderDetails.productName,
+                                        onChange: (e) => setOrderDetails(prev => ({ ...prev, productName: e.target.value }))
+                                    }),
+                                    errors.productName && React.createElement('p', { className: 'mt-1 text-sm text-red-600' }, errors.productName)
+                                ),
+
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Описание'),
+                                    React.createElement('textarea', {
+                                        className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500',
+                                        rows: 3,
+                                        placeholder: 'Дополнительные требования к заказу',
+                                        value: orderDetails.description,
+                                        onChange: (e) => setOrderDetails(prev => ({ ...prev, description: e.target.value }))
+                                    })
+                                ),
+
+                                // Блок загрузки чертежей
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' },
+                                        'Чертежи и документы'
+                                    ),
+                                    React.createElement(DrawingUpload, {
+                                        drawings: drawings,
+                                        onUpload: handleDrawingUpload,
+                                        onDelete: handleDrawingDelete,
+                                        onDownload: handleDrawingDownload,
+                                        onView: handleDrawingView,
+                                        maxFiles: 10,
+                                        maxFileSize: 10 * 1024 * 1024,
+                                        acceptedTypes: ['.pdf', '.dwg', '.dxf', '.jpg', '.jpeg', '.png', '.tiff', '.bmp']
+                                    })
+                                ),
+
+                                React.createElement('div', { className: 'grid grid-cols-2 gap-4' },
+                                    React.createElement('div', null,
+                                        React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Приоритет'),
+                                        React.createElement('select', {
+                                            className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500',
+                                            value: orderDetails.priority,
+                                            onChange: (e) => setOrderDetails(prev => ({ ...prev, priority: e.target.value }))
+                                        },
+                                            React.createElement('option', { value: 'low' }, 'Низкий'),
+                                            React.createElement('option', { value: 'normal' }, 'Обычный'),
+                                            React.createElement('option', { value: 'high' }, 'Высокий'),
+                                            React.createElement('option', { value: 'urgent' }, 'Срочный')
+                                        )
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Срок выполнения'),
+                                        React.createElement('input', {
+                                            type: 'date',
+                                            className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500',
+                                            value: orderDetails.deadline,
+                                            onChange: (e) => setOrderDetails(prev => ({ ...prev, deadline: e.target.value }))
+                                        })
+                                    )
+                                ),
+
+                                // Позиции заказа
+                                React.createElement('div', null,
+                                    React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                                        React.createElement('label', { className: 'block text-sm font-medium text-gray-700' },
+                                            'Позиции заказа ', React.createElement('span', { className: 'text-red-500' }, '*')
+                                        ),
+                                        React.createElement('button', {
+                                            type: 'button',
+                                            onClick: addOrderItem,
+                                            className: 'px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors'
+                                        }, 'Добавить позицию')
+                                    ),
+                                    errors.items && React.createElement('p', { className: 'mb-2 text-sm text-red-600' }, errors.items),
+                                    React.createElement('div', { className: 'space-y-4' },
+                                        orderDetails.items.map((item, index) => React.createElement('div', {
+                                            key: index,
+                                            className: 'grid grid-cols-12 gap-4 items-end'
+                                        },
+                                            React.createElement('div', { className: 'col-span-5' },
+                                                React.createElement('input', {
+                                                    type: 'text',
+                                                    className: 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500',
+                                                    placeholder: 'Название позиции',
+                                                    value: item.name,
+                                                    onChange: (e) => updateOrderItem(index, 'name', e.target.value)
+                                                })
+                                            ),
+                                            React.createElement('div', { className: 'col-span-2' },
+                                                React.createElement('input', {
+                                                    type: 'number',
+                                                    className: 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500',
+                                                    placeholder: 'Кол-во',
+                                                    min: '1',
+                                                    value: item.quantity,
+                                                    onChange: (e) => updateOrderItem(index, 'quantity', Number(e.target.value))
+                                                })
+                                            ),
+                                            React.createElement('div', { className: 'col-span-3' },
+                                                React.createElement('input', {
+                                                    type: 'number',
+                                                    className: 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500',
+                                                    placeholder: 'Цена за шт.',
+                                                    min: '0',
+                                                    step: '0.01',
+                                                    value: item.price,
+                                                    onChange: (e) => updateOrderItem(index, 'price', Number(e.target.value))
+                                                })
+                                            ),
+                                            React.createElement('div', { className: 'col-span-2 flex gap-2' },
+                                                React.createElement('div', {
+                                                    className: 'flex-1 text-right py-2 text-sm font-medium text-gray-700'
+                                                }, `${item.quantity * item.price}₽`),
+                                                orderDetails.items.length > 1 && React.createElement('button', {
+                                                    type: 'button',
+                                                    onClick: () => removeOrderItem(index),
+                                                    className: 'px-2 py-2 text-red-600 hover:text-red-800'
+                                                }, '✕')
+                                            )
+                                        ))
+                                    )
+                                )
+                            )
+                        ),
+
+                        // Остальные шаги (3-5) - упрощенные версии
+                        currentStep === 3 && React.createElement('div', null,
+                            React.createElement('h2', { className: 'text-xl font-semibold text-gray-900 mb-6' }, 'Доставка'),
+                            React.createElement('div', { className: 'space-y-6' },
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' },
+                                        'Адрес доставки ', React.createElement('span', { className: 'text-red-500' }, '*')
+                                    ),
+                                    React.createElement('input', {
+                                        type: 'text',
+                                        className: `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                                            errors.address ? 'border-red-500' : 'border-gray-300'
+                                        }`,
+                                        placeholder: 'г. Москва, ул. Примерная, д. 1',
+                                        value: deliveryInfo.address,
+                                        onChange: (e) => setDeliveryInfo(prev => ({ ...prev, address: e.target.value }))
+                                    }),
+                                    errors.address && React.createElement('p', { className: 'mt-1 text-sm text-red-600' }, errors.address)
+                                )
+                            )
+                        ),
+
+                        currentStep === 4 && React.createElement('div', null,
+                            React.createElement('h2', { className: 'text-xl font-semibold text-gray-900 mb-6' }, 'Финансовые условия'),
+                            React.createElement('div', { className: 'space-y-6' },
+                                React.createElement('div', { className: 'grid grid-cols-2 gap-4' },
+                                    React.createElement('div', null,
+                                        React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Сумма предоплаты (₽)'),
+                                        React.createElement('input', {
+                                            type: 'number',
+                                            className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500',
+                                            placeholder: '0',
+                                            min: '0',
+                                            step: '0.01',
+                                            value: financialInfo.prepaymentAmount,
+                                            onChange: (e) => setFinancialInfo(prev => ({ ...prev, prepaymentAmount: Number(e.target.value) }))
+                                        })
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'Способ оплаты'),
+                                        React.createElement('select', {
+                                            className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500',
+                                            value: financialInfo.paymentMethod,
+                                            onChange: (e) => setFinancialInfo(prev => ({ ...prev, paymentMethod: e.target.value }))
+                                        },
+                                            React.createElement('option', { value: 'cash' }, 'Наличные'),
+                                            React.createElement('option', { value: 'card' }, 'Банковская карта'),
+                                            React.createElement('option', { value: 'transfer' }, 'Банковский перевод')
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+
+                        currentStep === 5 && React.createElement('div', null,
+                            React.createElement('h2', { className: 'text-xl font-semibold text-gray-900 mb-6' }, 'Обзор заказа'),
+                            React.createElement('div', { className: 'space-y-6' },
+                                // Информация о клиенте
+                                React.createElement('div', { className: 'bg-gray-50 rounded-lg p-4' },
+                                    React.createElement('h3', { className: 'font-medium text-gray-900 mb-3' }, 'Клиент'),
+                                    React.createElement('div', { className: 'grid grid-cols-2 gap-4 text-sm' },
+                                        React.createElement('div', null,
+                                            React.createElement('span', { className: 'text-gray-600' }, 'ФИО: '),
+                                            React.createElement('span', { className: 'ml-2 font-medium' }, clientInfo.name)
+                                        ),
+                                        React.createElement('div', null,
+                                            React.createElement('span', { className: 'text-gray-600' }, 'Телефон: '),
+                                            React.createElement('span', { className: 'ml-2 font-medium' }, clientInfo.phone)
+                                        ),
+                                        clientInfo.email && React.createElement('div', null,
+                                            React.createElement('span', { className: 'text-gray-600' }, 'Email: '),
+                                            React.createElement('span', { className: 'ml-2 font-medium' }, clientInfo.email)
+                                        ),
+                                        clientInfo.company && React.createElement('div', null,
+                                            React.createElement('span', { className: 'text-gray-600' }, 'Компания: '),
+                                            React.createElement('span', { className: 'ml-2 font-medium' }, clientInfo.company)
+                                        )
+                                    )
+                                ),
+
+                                // Детали заказа
+                                React.createElement('div', { className: 'bg-gray-50 rounded-lg p-4' },
+                                    React.createElement('h3', { className: 'font-medium text-gray-900 mb-3' }, 'Заказ'),
+                                    React.createElement('div', { className: 'space-y-2 text-sm' },
+                                        React.createElement('div', null,
+                                            React.createElement('span', { className: 'text-gray-600' }, 'Продукт: '),
+                                            React.createElement('span', { className: 'ml-2 font-medium' }, orderDetails.productName)
+                                        ),
+                                        orderDetails.description && React.createElement('div', null,
+                                            React.createElement('span', { className: 'text-gray-600' }, 'Описание: '),
+                                            React.createElement('span', { className: 'ml-2' }, orderDetails.description)
+                                        ),
+                                        React.createElement('div', null,
+                                            React.createElement('span', { className: 'text-gray-600' }, 'Приоритет: '),
+                                            React.createElement('span', { className: 'ml-2 font-medium capitalize' }, orderDetails.priority)
+                                        ),
+                                        drawings.length > 0 && React.createElement('div', null,
+                                            React.createElement('span', { className: 'text-gray-600' }, 'Чертежи: '),
+                                            React.createElement('span', { className: 'ml-2 font-medium' }, `${drawings.length} файл(ов)`)
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+
+                        // Шаг 6 - Финальная страница
+                        currentStep === 6 && React.createElement('div', null,
+                            React.createElement('div', { className: 'text-center mb-8' },
+                                React.createElement('div', { className: 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4' },
+                                    React.createElement(Check, { className: 'h-8 w-8 text-green-600' })
+                                ),
+                                React.createElement('h2', { className: 'text-2xl font-bold text-gray-900 mb-2' }, 'Заказ успешно создан!'),
+                                React.createElement('p', { className: 'text-gray-600' }, 'Ваш заказ принят в работу и передан в производство')
+                            ),
+
+                            // Информация о заказе
+                            React.createElement('div', { className: 'bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl p-6 mb-6' },
+                                React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                                    React.createElement('h3', { className: 'text-lg font-semibold text-gray-900' }, 'Информация о заказе'),
+                                    React.createElement('div', { className: 'bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-sm font-medium' },
+                                        `№ ${createdOrderId || 'Загрузка...'}`
+                                    )
+                                ),
+                                React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4 text-sm' },
+                                    React.createElement('div', null,
+                                        React.createElement('span', { className: 'text-gray-600' }, 'Клиент: '),
+                                        React.createElement('span', { className: 'ml-2 font-medium' }, clientInfo.name)
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('span', { className: 'text-gray-600' }, 'Продукт: '),
+                                        React.createElement('span', { className: 'ml-2 font-medium' }, orderDetails.productName)
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('span', { className: 'text-gray-600' }, 'Приоритет: '),
+                                        React.createElement('span', { className: 'ml-2 font-medium capitalize' }, orderDetails.priority)
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('span', { className: 'text-gray-600' }, 'Срок выполнения: '),
+                                        React.createElement('span', { className: 'ml-2 font-medium' },
+                                            orderDetails.deadline ? new Date(orderDetails.deadline).toLocaleDateString() : 'Не указан'
+                                        )
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('span', { className: 'text-gray-600' }, 'Чертежи: '),
+                                        React.createElement('span', { className: 'ml-2 font-medium' }, `${drawings.length} файл(ов)`)
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('span', { className: 'text-gray-600' }, 'Общая сумма: '),
+                                        React.createElement('span', { className: 'ml-2 font-medium' },
+                                            `${orderDetails.items
+                                                .filter(item => item.name.trim())
+                                                .reduce((sum, item) => sum + (item.quantity * item.price), 0)}₽`
+                                        )
+                                    )
+                                )
+                            ),
+
+                            // QR-код
+                            createdOrderId && React.createElement('div', { className: 'bg-white border border-gray-200 rounded-xl p-6 mb-6' },
+                                React.createElement('h3', { className: 'text-lg font-semibold text-gray-900 mb-4' }, 'QR-код для отслеживания'),
+                                React.createElement('div', { className: 'flex flex-col items-center' },
+                                    React.createElement(QRCodeGenerator, { orderId: createdOrderId }),
+                                    React.createElement('p', { className: 'text-sm text-gray-600 mt-3 text-center' },
+                                        'QR-код содержит ссылку для отслеживания статуса заказа в реальном времени'
+                                    )
+                                )
+                            ),
+
+                            // Что дальше
+                            React.createElement('div', { className: 'bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6' },
+                                React.createElement('h3', { className: 'text-lg font-semibold text-blue-900 mb-4' }, 'Что происходит дальше?'),
+                                React.createElement('div', { className: 'space-y-3' },
+                                    React.createElement('div', { className: 'flex items-start space-x-3' },
+                                        React.createElement('div', { className: 'flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center' },
+                                            React.createElement('span', { className: 'text-blue-600 text-sm font-medium' }, '1')
+                                        ),
+                                        React.createElement('div', null,
+                                            React.createElement('p', { className: 'font-medium text-blue-900' }, 'Заказ добавлен в заказ-наряд'),
+                                            React.createElement('p', { className: 'text-sm text-blue-700' }, 'Ваш заказ автоматически появится в системе производства')
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'flex items-start space-x-3' },
+                                        React.createElement('div', { className: 'flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center' },
+                                            React.createElement('span', { className: 'text-blue-600 text-sm font-medium' }, '2')
+                                        ),
+                                        React.createElement('div', null,
+                                            React.createElement('p', { className: 'font-medium text-blue-900' }, 'Назначение ответственного'),
+                                            React.createElement('p', { className: 'text-sm text-blue-700' }, 'Менеджер назначит мастера и определит сроки')
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'flex items-start space-x-3' },
+                                        React.createElement('div', { className: 'flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center' },
+                                            React.createElement('span', { className: 'text-blue-600 text-sm font-medium' }, '3')
+                                        ),
+                                        React.createElement('div', null,
+                                            React.createElement('p', { className: 'font-medium text-blue-900' }, 'Начало производства'),
+                                            React.createElement('p', { className: 'text-sm text-blue-700' }, 'Заказ перейдет в статус "В производство"')
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'flex items-start space-x-3' },
+                                        React.createElement('div', { className: 'flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center' },
+                                            React.createElement('span', { className: 'text-blue-600 text-sm font-medium' }, '4')
+                                        ),
+                                        React.createElement('div', null,
+                                            React.createElement('p', { className: 'font-medium text-blue-900' }, 'Уведомления о прогрессе'),
+                                            React.createElement('p', { className: 'text-sm text-blue-700' }, 'Вы будете получать обновления о статусе заказа')
+                                        )
+                                    )
+                                )
+                            ),
+
+                            // Контакты
+                            React.createElement('div', { className: 'bg-gray-50 border border-gray-200 rounded-xl p-6 mb-6' },
+                                React.createElement('h3', { className: 'text-lg font-semibold text-gray-900 mb-4' }, 'Нужна помощь?'),
+                                React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4 text-sm' },
+                                    React.createElement('div', null,
+                                        React.createElement('span', { className: 'text-gray-600' }, 'Менеджер: '),
+                                        React.createElement('span', { className: 'ml-2 font-medium' }, 'Анна Петрова')
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('span', { className: 'text-gray-600' }, 'Телефон: '),
+                                        React.createElement('span', { className: 'ml-2 font-medium' }, '+7 (495) 123-45-67')
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('span', { className: 'text-gray-600' }, 'Email: '),
+                                        React.createElement('span', { className: 'ml-2 font-medium' }, 'orders@sofany.ru')
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('span', { className: 'text-gray-600' }, 'Время работы: '),
+                                        React.createElement('span', { className: 'ml-2 font-medium' }, '9:00 - 18:00 (Пн-Пт)')
+                                    )
+                                )
+                            ),
+
+                            // Действия
+                            React.createElement('div', { className: 'flex flex-col sm:flex-row gap-4 justify-center' },
+                                React.createElement('button', {
+                                    onClick: () => alert('Переход к заказу (в реальном приложении)'),
+                                    className: 'flex items-center justify-center gap-2 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors'
+                                },
+                                    React.createElement(FileText, { className: 'h-4 w-4' }),
+                                    'Перейти к заказу'
+                                ),
+                                React.createElement('button', {
+                                    onClick: () => alert('Переход к списку заказов (в реальном приложении)'),
+                                    className: 'flex items-center justify-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors'
+                                },
+                                    React.createElement(Package, { className: 'h-4 w-4' }),
+                                    'Все заказы'
+                                ),
+                                React.createElement('button', {
+                                    onClick: () => {
+                                        setCurrentStep(1);
+                                        setCompletedSteps(new Set());
+                                        setCreatedOrderId(null);
+                                        setDrawings([]);
+                                        setClientInfo({ name: '', phone: '', email: '', company: '' });
+                                        setOrderDetails({ productName: '', description: '', priority: 'normal', deadline: '', items: [{ name: '', quantity: 1, price: 0 }] });
+                                        setDeliveryInfo({ address: '', floor: '', hasFreightElevator: false, comment: '' });
+                                        setFinancialInfo({ prepaymentAmount: 0, prepaymentPercent: 0, paymentMethod: 'cash', invoiceNumber: '' });
+                                        setErrors({});
+                                    },
+                                    className: 'flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors'
+                                },
+                                    React.createElement(Plus, { className: 'h-4 w-4' }),
+                                    'Создать новый заказ'
+                                )
+                            )
+                        )
+                    ),
+
+                    // Навигация - скрыта на финальной странице
+                    currentStep !== 6 && React.createElement('div', { className: 'flex justify-between mt-8' },
+                        React.createElement('button', {
+                            onClick: prevStep,
+                            disabled: currentStep === 1,
+                            className: 'flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                        },
+                            React.createElement(ArrowLeft, { className: 'h-4 w-4' }),
+                            'Назад'
+                        ),
+
+                        React.createElement('div', { className: 'flex gap-4' },
+                            currentStep === 5 ? React.createElement('button', {
+                                onClick: createOrder,
+                                disabled: loading || uploadingDrawings,
+                                className: 'flex items-center gap-2 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed'
+                            },
+                                (loading || uploadingDrawings) ? React.createElement('div', {
+                                    className: 'h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin'
+                                }) : React.createElement(Check, { className: 'h-4 w-4' }),
+                                loading ? 'Создание...' : uploadingDrawings ? 'Загрузка чертежей...' : 'Создать заказ'
+                            ) : React.createElement('button', {
+                                onClick: nextStep,
+                                className: 'flex items-center gap-2 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors'
+                            },
+                                'Далее',
+                                React.createElement(ArrowRight, { className: 'h-4 w-4' })
+                            )
+                        )
+                    ),
+
+                )
+            );
+        };
+
+        // Рендер приложения
+        ReactDOM.render(React.createElement(CreateOrderWizard), document.getElementById('root'));
+    </script>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Simple Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .kanban-board {
+            display: flex;
+            gap: 20px;
+            min-height: 500px;
+        }
+        
+        .kanban-column {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            min-width: 300px;
+            border: 2px solid #e0e0e0;
+            min-height: 400px;
+        }
+        
+        .kanban-column.drag-over {
+            border-color: #007bff;
+            background: #f0f8ff;
+        }
+        
+        .column-header {
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .kanban-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: move;
+            transition: all 0.3s;
+        }
+        
+        .kanban-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .kanban-card.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+        
+        .card-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .card-amount {
+            color: #007bff;
+            font-weight: bold;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.3s;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .sidebar.open {
+            right: 0;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            z-index: 999;
+        }
+        
+        .overlay.active {
+            display: block;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom-color: #007bff;
+            color: #007bff;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Kanban Simple Test</h1>
+    <p>Тестирование перетаскивания и шторки</p>
+    
+    <div class="kanban-board" id="kanbanBoard">
+        <div class="kanban-column" data-column="todo">
+            <div class="column-header">To Do</div>
+            <div class="kanban-card" draggable="true" data-card="1" onclick="openSidebar(this)">
+                <div class="card-title">Задача 1</div>
+                <div class="card-amount">50,000 ₽</div>
+            </div>
+            <div class="kanban-card" draggable="true" data-card="2" onclick="openSidebar(this)">
+                <div class="card-title">Задача 2</div>
+                <div class="card-amount">75,000 ₽</div>
+            </div>
+        </div>
+        
+        <div class="kanban-column" data-column="in-progress">
+            <div class="column-header">In Progress</div>
+            <div class="kanban-card" draggable="true" data-card="3" onclick="openSidebar(this)">
+                <div class="card-title">Задача 3</div>
+                <div class="card-amount">100,000 ₽</div>
+            </div>
+        </div>
+        
+        <div class="kanban-column" data-column="done">
+            <div class="column-header">Done</div>
+        </div>
+    </div>
+    
+    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+    
+    <div class="sidebar" id="sidebar">
+        <button class="close-btn" onclick="closeSidebar()">&times;</button>
+        <h2>Детали задачи</h2>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="info">Информация</div>
+            <div class="tab" data-tab="comments">Комментарии</div>
+            <div class="tab" data-tab="finance">Финансы</div>
+        </div>
+        
+        <div class="tab-content active" id="info-tab">
+            <h3>Основная информация</h3>
+            <p>Здесь будет информация о задаче</p>
+        </div>
+        
+        <div class="tab-content" id="comments-tab">
+            <h3>Комментарии</h3>
+            <p>Здесь будут комментарии</p>
+        </div>
+        
+        <div class="tab-content" id="finance-tab">
+            <h3>Финансы</h3>
+            <p>Здесь будет финансовая информация</p>
+        </div>
+    </div>
+
+    <script>
+        let draggedCard = null;
+        
+        // Инициализация drag & drop
+        function initDragAndDrop() {
+            console.log('Initializing drag and drop...');
+            
+            const cards = document.querySelectorAll('.kanban-card');
+            const columns = document.querySelectorAll('.kanban-column');
+            
+            console.log('Found cards:', cards.length);
+            console.log('Found columns:', columns.length);
+            
+            // Обработчики для карточек
+            cards.forEach(card => {
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+            });
+            
+            // Обработчики для колонок
+            columns.forEach(column => {
+                column.addEventListener('dragover', handleDragOver);
+                column.addEventListener('dragleave', handleDragLeave);
+                column.addEventListener('drop', handleDrop);
+            });
+            
+            console.log('Drag and drop initialized');
+        }
+        
+        // Обработчики drag & drop
+        function handleDragStart(e) {
+            console.log('Drag start:', this.dataset.card);
+            draggedCard = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.card);
+        }
+        
+        function handleDragEnd() {
+            console.log('Drag end');
+            this.classList.remove('dragging');
+            const columns = document.querySelectorAll('.kanban-column');
+            columns.forEach(col => col.classList.remove('drag-over'));
+            draggedCard = null;
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            this.classList.add('drag-over');
+            console.log('Drag over column:', this.dataset.column);
+        }
+        
+        function handleDragLeave(e) {
+            if (!this.contains(e.relatedTarget)) {
+                this.classList.remove('drag-over');
+                console.log('Drag leave column:', this.dataset.column);
+            }
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            console.log('Drop on column:', this.dataset.column);
+            
+            const cardId = e.dataTransfer.getData('text/plain');
+            const card = document.querySelector(`[data-card="${cardId}"]`);
+            
+            if (card) {
+                console.log('Moving card to column:', this.dataset.column);
+                this.appendChild(card);
+            }
+        }
+        
+        // Функции для шторки
+        function openSidebar(card) {
+            console.log('Opening sidebar for card:', card.dataset.card);
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            
+            sidebar.classList.add('open');
+            overlay.classList.add('active');
+            
+            // Инициализируем табы
+            initTabs();
+        }
+        
+        function closeSidebar() {
+            console.log('Closing sidebar');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+        
+        // Инициализация табов
+        function initTabs() {
+            console.log('Initializing tabs...');
+            const tabs = document.querySelectorAll('.tab');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    console.log('Tab clicked:', this.dataset.tab);
+                    
+                    // Убираем активный класс у всех табов
+                    tabs.forEach(t => t.classList.remove('active'));
+                    // Добавляем активный класс текущему табу
+                    this.classList.add('active');
+                    
+                    // Скрываем все содержимое табов
+                    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                    // Показываем содержимое выбранного таба
+                    const tabId = this.dataset.tab;
+                    const targetTab = document.getElementById(`${tabId}-tab`);
+                    if (targetTab) {
+                        targetTab.classList.add('active');
+                        console.log('Tab content activated:', tabId);
+                    }
+                });
+            });
+            
+            console.log('Tabs initialized');
+        }
+        
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing...');
+            initDragAndDrop();
+            console.log('Initialization complete');
+        });
+    </script>
+</body>
+</html>
+
+

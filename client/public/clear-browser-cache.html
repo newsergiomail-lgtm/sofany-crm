@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Очистка браузерного кэша</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+        .step {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            transition: all 0.3s ease;
+        }
+        .step:hover {
+            border-color: #4299e1;
+            background: #ebf8ff;
+        }
+        .step h3 {
+            color: #2d3748;
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+        }
+        .step p {
+            color: #4a5568;
+            margin: 0;
+            line-height: 1.6;
+        }
+        .button {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin: 20px 0;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(66, 153, 225, 0.3);
+        }
+        .button:active {
+            transform: translateY(0);
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 2px solid #9ae6b4;
+        }
+        .error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 2px solid #feb2b2;
+        }
+        .info {
+            background: #bee3f8;
+            color: #2a4365;
+            border: 2px solid #90cdf4;
+        }
+        .keyboard {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Очистка браузерного кэша</h1>
+        
+        <div class="step">
+            <h3>1. Автоматическая очистка</h3>
+            <p>Нажмите кнопку ниже для автоматической очистки всех кэшей приложения</p>
+            <button class="button" onclick="clearAllCaches()">
+                🚀 Очистить все кэши
+            </button>
+        </div>
+
+        <div class="step">
+            <h3>2. Ручная очистка</h3>
+            <p>Если автоматическая очистка не помогла, выполните следующие шаги:</p>
+            <p><strong>Chrome/Edge:</strong> <span class="keyboard">Ctrl+Shift+R</span> или <span class="keyboard">F12</span> → Network → "Disable cache" → <span class="keyboard">Ctrl+R</span></p>
+            <p><strong>Firefox:</strong> <span class="keyboard">Ctrl+Shift+R</span> или <span class="keyboard">F12</span> → Network → "Disable cache" → <span class="keyboard">Ctrl+R</span></p>
+            <p><strong>Safari:</strong> <span class="keyboard">Cmd+Option+R</span> или <span class="keyboard">Cmd+Option+I</span> → Network → "Disable cache" → <span class="keyboard">Cmd+R</span></p>
+        </div>
+
+        <div class="step">
+            <h3>3. Очистка Service Worker</h3>
+            <p>Если у вас установлен Service Worker, он может кэшировать старые версии</p>
+            <button class="button" onclick="clearServiceWorker()">
+                🔄 Очистить Service Worker
+            </button>
+        </div>
+
+        <div class="step">
+            <h3>4. Полная очистка браузера</h3>
+            <p>В крайнем случае, очистите все данные сайта:</p>
+            <p><strong>Chrome:</strong> Настройки → Конфиденциальность → Очистить данные → "Все время" → "Файлы cookie и данные сайтов"</p>
+            <p><strong>Firefox:</strong> Настройки → Приватность → "Очистить данные" → "Кэш"</p>
+        </div>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        async function clearAllCaches() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '<div class="info">🔄 Очистка кэшей...</div>';
+
+            try {
+                // Очищаем кэш браузера
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+                    console.log('✅ Browser caches cleared');
+                }
+
+                // Очищаем localStorage
+                localStorage.clear();
+                console.log('✅ localStorage cleared');
+
+                // Очищаем sessionStorage
+                sessionStorage.clear();
+                console.log('✅ sessionStorage cleared');
+
+                // Очищаем Service Worker
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(registration => registration.unregister()));
+                    console.log('✅ Service Workers unregistered');
+                }
+
+                statusDiv.innerHTML = '<div class="success">✅ Все кэши очищены! Теперь обновите страницу (Ctrl+Shift+R)</div>';
+                
+                // Автоматически обновляем страницу через 2 секунды
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 2000);
+
+            } catch (error) {
+                console.error('❌ Error clearing caches:', error);
+                statusDiv.innerHTML = '<div class="error">❌ Ошибка при очистке кэшей: ' + error.message + '</div>';
+            }
+        }
+
+        async function clearServiceWorker() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '<div class="info">🔄 Очистка Service Worker...</div>';
+
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(registration => registration.unregister()));
+                    statusDiv.innerHTML = '<div class="success">✅ Service Worker очищен! Обновите страницу</div>';
+                } else {
+                    statusDiv.innerHTML = '<div class="info">ℹ️ Service Worker не найден</div>';
+                }
+            } catch (error) {
+                console.error('❌ Error clearing Service Worker:', error);
+                statusDiv.innerHTML = '<div class="error">❌ Ошибка при очистке Service Worker: ' + error.message + '</div>';
+            }
+        }
+
+        // Показываем информацию о текущем состоянии
+        window.addEventListener('load', () => {
+            const statusDiv = document.getElementById('status');
+            let info = '<div class="info">ℹ️ Информация о кэше:<br>';
+            
+            if ('caches' in window) {
+                info += '✅ Cache API поддерживается<br>';
+            } else {
+                info += '❌ Cache API не поддерживается<br>';
+            }
+            
+            if ('serviceWorker' in navigator) {
+                info += '✅ Service Worker поддерживается<br>';
+            } else {
+                info += '❌ Service Worker не поддерживается<br>';
+            }
+            
+            info += `📊 localStorage: ${Object.keys(localStorage).length} элементов<br>`;
+            info += `📊 sessionStorage: ${Object.keys(sessionStorage).length} элементов</div>`;
+            
+            statusDiv.innerHTML = info;
+        });
+    </script>
+</body>
+</html>
+
+
+
+
